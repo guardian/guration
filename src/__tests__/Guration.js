@@ -37,7 +37,7 @@ const runDrag = (type, data, json = true) => dropProps => {
   dropProps.onDrop(e);
 };
 
-describe('Children', () => {
+describe('Guration', () => {
   it('creates MOVE events from dragged nodes', () => {
     let dragProps;
     let dropProps;
