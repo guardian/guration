@@ -1,13 +1,42 @@
-import React from 'react';
+// @flow
+
+import React, { type Node as ReactNode } from 'react';
 import { RootContext } from './Context';
+import Node from './Node';
 import { move, insert, update } from './Edits';
 import { isSubPath, pathForMove } from './utils/PathUtils';
 import { getChangedFields, hasFields } from './utils/FieldUtils';
+import { type Path } from './types/Path';
+import { type InsertData, type MoveData } from './types/Data';
+import { type Edit } from './Edits';
+import { type GetDuplicate } from './Dedupe';
 
 const INTERNAL_TRANSFER_TYPE = '@@TRANSFER';
 
-class Root extends React.Component {
-  handleDragStart = (path, fields, type, id, index) => e => {
+type RootProps = {
+  onChange: (edits: Edit[]) => void,
+  onError: (error: string) => void,
+  dropMappers: {
+    [string]: (data: string) => InsertData | null
+  },
+  children: ReactNode
+};
+
+class Root extends React.Component<RootProps> {
+  static defaultProps = {
+    onError: () => {}
+  };
+
+  handleDragStart = (
+    path: Path[],
+    fields: Object,
+    type: string,
+    id: string,
+    index: number
+  ) => (e: DragEvent) => {
+    if (!e.dataTransfer) {
+      return;
+    }
     e.dataTransfer.setData(
       INTERNAL_TRANSFER_TYPE,
       JSON.stringify({
@@ -20,25 +49,41 @@ class Root extends React.Component {
     );
   };
 
-  getDropData(e) {
+  getDropData(e: DragEvent) {
     const { dropMappers } = this.props;
 
+    const { dataTransfer } = e;
+
+    if (!dataTransfer) {
+      return;
+    }
+
     const type = Object.keys(dropMappers).find(key =>
-      e.dataTransfer.getData(key)
+      dataTransfer.getData(key)
     );
 
     if (!type) {
       return null;
     }
 
-    return dropMappers[type](e.dataTransfer.getData(type));
+    return dropMappers[type](dataTransfer.getData(type));
   }
 
-  handleDrop = (path, fields, getDuplicate) => e => {
-    const moveData = e.dataTransfer.getData(INTERNAL_TRANSFER_TYPE);
+  handleDrop = (path: Path[], fields: Object, getDuplicate: GetDuplicate) => (
+    e: DragEvent
+  ) => {
+    const { dataTransfer } = e;
 
-    if (moveData) {
-      return this.handleMove(JSON.parse(moveData), path, fields);
+    if (!dataTransfer) {
+      return;
+    }
+
+    const moveDataStr = dataTransfer.getData(INTERNAL_TRANSFER_TYPE);
+
+    if (moveDataStr) {
+      const moveData: MoveData = JSON.parse(moveDataStr);
+      this.handleMove(moveData, path, fields);
+      return;
     }
 
     const data = this.getDropData(e);
@@ -50,7 +95,7 @@ class Root extends React.Component {
     this.handleInsert(data, path, fields, getDuplicate);
   };
 
-  handleMove(dragData, path, fields) {
+  handleMove(dragData: MoveData, path: Path[], fields: Object) {
     const { path: dragPath, fields: dragFields } = dragData;
 
     const { type: dragType, id } = dragPath[dragPath.length - 1];
@@ -73,13 +118,20 @@ class Root extends React.Component {
     // TODO: find the changed fields
     const changedFields = getChangedFields(dragFields, fields);
 
-    this.props.onChange([
-      move(type, id, dragPath, movePath, index),
-      hasFields(fields) && update(type, id, changedFields)
-    ].filter(Boolean));
+    this.props.onChange(
+      [
+        move(type, id, dragPath, movePath, index),
+        hasFields(fields) && update(type, id, changedFields)
+      ].filter(Boolean)
+    );
   }
 
-  handleInsert({ type: dragType, id }, path, fields, getDuplicate) {
+  handleInsert(
+    { type: dragType, id }: InsertData,
+    path: Path[],
+    fields: Object,
+    getDuplicate: GetDuplicate
+  ) {
     const { type, index } = path[path.length - 1];
     if (dragType !== type) {
       this.props.onError(`can't drop ${dragType} where ${type} should go`);
@@ -91,10 +143,12 @@ class Root extends React.Component {
     if (duplicate) {
       this.handleMove(duplicate, path, fields);
     } else {
-      this.props.onChange([
-        insert(type, id, path, index),
-        hasFields(fields) && update(type, id, fields) 
-      ].filter(Boolean));
+      this.props.onChange(
+        [
+          insert(type, id, path, index),
+          hasFields(fields) && update(type, id, fields)
+        ].filter(Boolean)
+      );
     }
   }
 
@@ -105,13 +159,11 @@ class Root extends React.Component {
         handleDrop: this.handleDrop
       }}
     >
-      {this.props.children}
+      <Node type="@@ROOT" id="@@ROOT" index={0}>
+        {this.props.children}
+      </Node>
     </RootContext.Provider>
   );
 }
-
-Root.defaultProps = {
-  onError: () => {}
-};
 
 export default Root;

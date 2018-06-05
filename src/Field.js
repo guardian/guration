@@ -1,7 +1,22 @@
-import React from 'react';
+// @flow
+
+import React, { type Node as ReactNode } from 'react';
 import { RootContext, PathContext, DedupeContext } from './Context';
 
-const Field = ({ type, value, children }) => (
+type GetDropProps = (i: number) => ({
+  onDragOver: (e: DragEvent) => void,
+  onDrop: (e: DragEvent) => void
+})
+
+type ChildFunc = (getDropProps: GetDropProps) => ReactNode;
+
+type FieldProps = {
+  type: string,
+  value: string | number | boolean,
+  children: ReactNode | ChildFunc
+};
+
+const Field = ({ type, value, children }: FieldProps) => (
   <RootContext.Consumer>
     {({ handleDrop }) => (
       <PathContext.Consumer>

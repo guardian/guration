@@ -1,4 +1,6 @@
-const getChangedFields = (prevFields, nextFields) =>
+// @flow
+
+const getChangedFields = (prevFields: Object, nextFields: Object) =>
   Object.entries({
     ...prevFields,
     ...nextFields
@@ -12,6 +14,6 @@ const getChangedFields = (prevFields, nextFields) =>
       {}
     );
 
-const hasFields = fields => Object.keys(fields).length === 0;
+const hasFields = (fields: Object) => Object.keys(fields).length === 0;
 
 export { getChangedFields, hasFields };

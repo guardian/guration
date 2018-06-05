@@ -1,8 +1,11 @@
-import React from 'react';
-import { RootContext, PathContext, DedupeContext } from './Context';
+// @flow
 
-const updatePath = (path, childrenKey) => {
-  const parent = path[path.length - 1] || {};
+import React, { type Node as ReactNode } from 'react';
+import { RootContext, PathContext, DedupeContext } from './Context';
+import { type Path } from './types/Path';
+
+const updatePath = (path: Path[], childrenKey: string) => {
+  const parent = path[path.length - 1];
 
   return [
     ...path.slice(0, path.length - 1),
@@ -13,7 +16,22 @@ const updatePath = (path, childrenKey) => {
   ];
 };
 
-const Children = ({ childrenKey, type, children }) => (
+type GetDropProps = (
+  i: number
+) => {
+  onDragOver: (e: DragEvent) => void,
+  onDrop: (e: DragEvent) => void
+};
+
+type ChildFunc = (getDropProps: GetDropProps) => ReactNode;
+
+type ChildrenProps = {
+  childrenKey: string,
+  type: string,
+  children: ChildFunc | ReactNode
+};
+
+const Children = ({ childrenKey, type, children }: ChildrenProps) => (
   <RootContext.Consumer>
     {({ handleDrop }) => (
       <PathContext.Consumer>
@@ -30,7 +48,10 @@ const Children = ({ childrenKey, type, children }) => (
                   ? children(i => ({
                       onDragOver: e => e.preventDefault(),
                       onDrop: handleDrop(
-                        [...updatePath(path, childrenKey), { type, index: i }],
+                        [
+                          ...updatePath(path, childrenKey),
+                          { type, index: i, id: '@@DROP' }
+                        ],
                         fields,
                         getDuplicate
                       )

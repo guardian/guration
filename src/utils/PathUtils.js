@@ -1,6 +1,10 @@
-const isSubPath = (path, candidate) =>
+// @flow
+
+import { type Path } from '../types/Path';
+
+const isSubPath = (path: Path[], candidate: Path[]): boolean =>
   candidate.length > path.length &&
-  path.length &&
+  !!path.length &&
   !path.some((el, i) => {
     const { index: i1, type: t1, childrenKey: c1 } = el;
     const { index: i2, type: t2, childrenKey: c2 } = candidate[i];
@@ -14,7 +18,7 @@ const isSubPath = (path, candidate) =>
     );
   });
 
-const pathForMove = (source, target) => {
+const pathForMove = (source: Path[], target: Path[]): Path[] => {
   const newPath = [];
 
   for (let i = 0; i < target.length; i += 1) {
