@@ -1,0 +1,7 @@
+/flow-typed
+/.vscode
+/examples
+yarn-error.log
+yarn.lock
+.flowconfig
+.babelrc

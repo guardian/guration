@@ -1,0 +1,9 @@
+{
+  "ignore": ["node_modules/**"],
+  "presets": [
+    ["@babel/env", { "modules": false }],
+    "@babel/react",
+    "@babel/flow"
+  ],
+  "plugins": ["@babel/proposal-class-properties"]
+}
