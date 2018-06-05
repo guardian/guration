@@ -142,7 +142,14 @@ describe('Children', () => {
 
     expect(edit[0]).toEqual({
       payload: {
-        from: { parent: { childrenKey: 'children1' } },
+        from: {
+          parent: {
+            childrenKey: 'children1',
+            id: '@@ROOT',
+            index: 0,
+            type: '@@ROOT'
+          }
+        },
         id: 2,
         to: {
           parent: { id: 3, index: 0, type: 'a', childrenKey: 'children2' },
@@ -184,8 +191,6 @@ describe('Children', () => {
   });
 
   it('does not allow move of a node to an invalid type position', () => {
-    let e = createDragEvent();
-
     let dragProps;
     let dropProps;
     let error;
@@ -213,8 +218,6 @@ describe('Children', () => {
   });
 
   it('adjusts move indices when moving things that affect the drop index', () => {
-    let e = createDragEvent();
-
     let dragProps;
     let dropProps;
     let edit;
@@ -244,8 +247,6 @@ describe('Children', () => {
   });
 
   it('creates UPDATE events for changed fields', () => {
-    let e = createDragEvent();
-
     let dragProps;
     let dropProps;
     let edit;
