@@ -7,7 +7,7 @@ type InsertData = {
   id: string
 };
 
-type MoveData = InsertData & {
+type MoveData = {
   path: Path[],
   fields: Object,
   index: number

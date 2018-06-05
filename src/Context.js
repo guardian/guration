@@ -9,9 +9,7 @@ const RootContext = React.createContext({
   handleDragStart: (
     path: Path[],
     fields: Object,
-    type: string,
-    id: string,
-    index: number
+    type: string
   ) => (e: DragEvent) => {},
   handleDrop: (path: Path[], fields: Object, getDuplicate: GetDuplicate) => (
     e: DragEvent

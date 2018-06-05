@@ -30,7 +30,7 @@ class Dedupe extends React.Component<DedupeProps> {
     path: Path[],
     fields: Object,
     type: string,
-    id: string,
+    key: string,
     index: number
   ) => {
     if (this.type.indexOf(type) === -1) {
@@ -43,7 +43,7 @@ class Dedupe extends React.Component<DedupeProps> {
       ...this.context,
       [type]: {
         ...prevOfType,
-        [id]: {
+        [key]: {
           path,
           fields,
           index
@@ -52,18 +52,18 @@ class Dedupe extends React.Component<DedupeProps> {
     };
   };
 
-  deregister = (type: string, id: string) => {
+  deregister = (type: string, key: string) => {
     const prevOfType = this.context[type] || {};
 
     this.context = {
       ...this.context,
       [type]: {
         ...Object.keys(prevOfType)
-          .filter(id2 => id2 !== id)
+          .filter(key2 => key2 !== key)
           .reduce(
-            (acc, id2) => ({
+            (acc, key2) => ({
               ...acc,
-              [id2]: prevOfType[id2]
+              [key2]: prevOfType[key2]
             }),
             {}
           )
@@ -71,8 +71,8 @@ class Dedupe extends React.Component<DedupeProps> {
     };
   };
 
-  getDuplicate = (type: string, id: string): ?MoveData =>
-    (this.context[type] || {})[id] || null;
+  getDuplicate = (type: string, key: string): ?MoveData =>
+    (this.context[type] || {})[key] || null;
 
   render = () => {
     const { children } = this.props;

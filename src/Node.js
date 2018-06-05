@@ -15,6 +15,7 @@ type NodeProps = {
   children: ChildFunc | ReactNode,
   type: string,
   id: string,
+  dedupeKey?: string,
   index: number
 };
 
@@ -37,19 +38,24 @@ class Node extends React.Component<NodePropsWithContext> {
     return [...path, { type, id, index }];
   }
 
+  get dedupeKey() {
+    const { id, dedupeKey } = this.props;
+    return dedupeKey || id;
+  }
+
   deregister = () => {};
 
   componentDidMount = () => {
-    const { register, deregister, fields, type, id, index } = this.props;
-    register(this.path, fields, type, id, index);
-    this.deregister = () => deregister(type, id);
+    const { register, deregister, fields, type, index } = this.props;
+    register(this.path, fields, type, this.dedupeKey, index);
+    this.deregister = () => deregister(type, this.dedupeKey);
   };
 
   componentDidUpdate = () => {
-    const { register, deregister, fields, type, id, index } = this.props;
+    const { register, deregister, fields, type, index } = this.props;
     this.deregister();
-    register(this.path, fields, type, id, index);
-    this.deregister = () => deregister(type, id);
+    register(this.path, fields, type, this.dedupeKey, index);
+    this.deregister = () => deregister(type, this.dedupeKey);
   };
 
   componentWillUnmount = () => this.deregister();
@@ -63,7 +69,7 @@ class Node extends React.Component<NodePropsWithContext> {
             {typeof children === 'function'
               ? children(() => ({
                   draggable: true,
-                  onDragStart: handleDragStart(this.path, fields, type, id, index)
+                  onDragStart: handleDragStart(this.path, fields, type)
                 }))
               : children}
           </PathContext.Provider>

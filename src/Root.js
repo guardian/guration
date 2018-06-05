@@ -27,13 +27,9 @@ class Root extends React.Component<RootProps> {
     onError: () => {}
   };
 
-  handleDragStart = (
-    path: Path[],
-    fields: Object,
-    type: string,
-    id: string,
-    index: number
-  ) => (e: DragEvent) => {
+  handleDragStart = (path: Path[], fields: Object, type: string) => (
+    e: DragEvent
+  ) => {
     if (!e.dataTransfer) {
       return;
     }
@@ -42,9 +38,7 @@ class Root extends React.Component<RootProps> {
       JSON.stringify({
         path,
         fields,
-        type,
-        id,
-        index
+        type
       })
     );
   };
