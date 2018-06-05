@@ -56,4 +56,4 @@ type Update = $Return<typeof update>;
 type Edit = Move | Insert | Update;
 
 export { move, insert, update };
-export type { Edit };
+export type { Edit, Move, Insert, Update };
