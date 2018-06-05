@@ -14,6 +14,6 @@ const getChangedFields = (prevFields: Object, nextFields: Object) =>
       {}
     );
 
-const hasFields = (fields: Object) => Object.keys(fields).length === 0;
+const hasFields = (fields: Object) => Object.keys(fields).length !== 0;
 
 export { getChangedFields, hasFields };
