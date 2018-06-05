@@ -109,13 +109,12 @@ class Root extends React.Component<RootProps> {
 
     const { index } = movePath[movePath.length - 1];
 
-    // TODO: find the changed fields
     const changedFields = getChangedFields(dragFields, fields);
 
     this.props.onChange(
       [
         move(type, id, dragPath, movePath, index),
-        hasFields(fields) && update(type, id, changedFields)
+        hasFields(changedFields) && update(type, id, changedFields)
       ].filter(Boolean)
     );
   }
