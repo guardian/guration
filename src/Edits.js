@@ -3,13 +3,49 @@
 import { type $Return } from './types/Utils';
 import { type Path } from './types/Path';
 
+type Move = {|
+  type: 'MOVE',
+  payload: {|
+    type: string,
+    id: string,
+    from: {|
+      parent: Path
+    |},
+    to: {|
+      parent: Path,
+      index: number
+    |}
+  |}
+|};
+
+type Insert = {|
+  type: 'INSERT',
+  payload: {|
+    type: string,
+    id: string,
+    path: {|
+      parent: Path,
+      index: number
+    |}
+  |}
+|};
+
+type Update = {|
+  type: 'UPDATE',
+  payload: {|
+    type: string,
+    id: string,
+    fields: Object
+  |}
+|};
+
 const move = (
   type: string,
   id: string,
   dragPath: Path[],
   path: Path[],
   newIndex: number
-) => ({
+): Move => ({
   type: 'MOVE',
   payload: {
     type,
@@ -29,7 +65,7 @@ const insert = (
   id: string,
   dragPath: Path[],
   newIndex: number
-) => ({
+): Insert => ({
   type: 'INSERT',
   payload: {
     type,
@@ -41,7 +77,7 @@ const insert = (
   }
 });
 
-const update = (type: string, id: string, fields: Object) => ({
+const update = (type: string, id: string, fields: Object): Update => ({
   type: 'UPDATE',
   payload: {
     type,
@@ -50,9 +86,6 @@ const update = (type: string, id: string, fields: Object) => ({
   }
 });
 
-type Move = $Return<typeof move>;
-type Insert = $Return<typeof insert>;
-type Update = $Return<typeof update>;
 type Edit = Move | Insert | Update;
 
 export { move, insert, update };
