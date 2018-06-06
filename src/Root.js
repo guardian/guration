@@ -17,7 +17,7 @@ type RootProps = {
   onChange: (edits: Edit[]) => void,
   onError: (error: string) => void,
   dropMappers: {
-    [string]: (data: string) => InsertData | null
+    [string]: (data: string) => InsertData | string
   },
   children: ReactNode
 };
@@ -49,7 +49,7 @@ class Root extends React.Component<RootProps> {
     const { dataTransfer } = e;
 
     if (!dataTransfer) {
-      return;
+      return 'Unable to drop';
     }
 
     const type = Object.keys(dropMappers).find(key =>
@@ -57,7 +57,7 @@ class Root extends React.Component<RootProps> {
     );
 
     if (!type) {
-      return null;
+      return 'Unable to drop this';
     }
 
     return dropMappers[type](dataTransfer.getData(type));
@@ -82,7 +82,7 @@ class Root extends React.Component<RootProps> {
 
     const data = this.getDropData(e);
 
-    if (!data) {
+    if (typeof data === 'string') {
       return;
     }
 
