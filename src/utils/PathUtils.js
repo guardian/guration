@@ -39,4 +39,31 @@ const pathForMove = (source: Path[], target: Path[]): Path[] => {
   return newPath;
 };
 
-export { isSubPath, pathForMove };
+const hasMoved = (prevPath: Path[], nextPath: Path[]) => {
+  if (prevPath.length !== nextPath.length) {
+    return true;
+  }
+
+  for (let i = 0; i < prevPath.length; i += 1) {
+    const { index: i1, childrenKey: c1 } = prevPath[i];
+    const { index: i2, childrenKey: c2 } = nextPath[i];
+
+    if (i < prevPath.length - 1) {
+      if (c1 !== c2) {
+        return true;
+      } else if (i1 !== i2) {
+        return true;
+      }
+    } else {
+      if (i2 < i1 - 1 || i2 > i1 + 1) {
+        return true;
+      }
+      return false;
+    }
+  }
+
+  // incase we have empty paths?
+  return false;
+};
+
+export { isSubPath, pathForMove, hasMoved };

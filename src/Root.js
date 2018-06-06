@@ -4,7 +4,7 @@ import React, { type Node as ReactNode } from 'react';
 import { RootContext } from './Context';
 import Node from './Node';
 import { move, insert, update } from './Edits';
-import { isSubPath, pathForMove } from './utils/PathUtils';
+import { isSubPath, pathForMove, hasMoved } from './utils/PathUtils';
 import { getChangedFields, hasFields } from './utils/FieldUtils';
 import { type Path } from './types/Path';
 import { type InsertData, type MoveData } from './types/Data';
@@ -113,7 +113,7 @@ class Root extends React.Component<RootProps> {
 
     this.props.onChange(
       [
-        move(type, id, dragPath, movePath, index),
+        hasMoved(dragPath, path) && move(type, id, dragPath, movePath, index),
         hasFields(changedFields) && update(type, id, changedFields)
       ].filter(Boolean)
     );

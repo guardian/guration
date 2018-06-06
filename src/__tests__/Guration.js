@@ -227,7 +227,7 @@ describe('Guration', () => {
         <Node type="b" id={1} index={0}>
           <Children childrenKey="children" type="a">
             {getDropProps => {
-              dropProps = getDropProps(1);
+              dropProps = getDropProps(3);
               return (
                 <Node type="a" id={2} index={0}>
                   {getDragProps => {
@@ -243,7 +243,7 @@ describe('Guration', () => {
 
     runDrag(dragProps)(dropProps);
 
-    expect(edit[0].payload.to.index).toBe(0);
+    expect(edit[0].payload.to.index).toBe(2);
   });
 
   it('creates UPDATE events for changed fields', () => {
@@ -284,5 +284,62 @@ describe('Guration', () => {
         }
       }
     });
+  });
+
+  it('does not create UPDATE events when fields are unchanged', () => {
+    let dragProps;
+    let dropProps;
+    let edit;
+
+    TestRenderer.create(
+      <Root onChange={e => (edit = e)}>
+        <Field type="f" value={0}>
+          <Node type="a" id="1" index={0}>
+            {getDragProps => {
+              dragProps = getDragProps();
+            }}
+          </Node>
+          <Node type="a" id="2" index={1}>
+            <Children childrenKey="children" type="a">
+              {getDropProps => {
+                dropProps = getDropProps(1);
+              }}
+            </Children>
+          </Node>
+        </Field>
+      </Root>
+    );
+
+    runDrag(dragProps)(dropProps);
+
+    expect(edit[1]).toEqual(undefined);
+  });
+
+  it('does not create MOVE events when moves will have no impact', () => {
+    let dragProps;
+    let dropProps;
+    let edit;
+
+    TestRenderer.create(
+      <Root onChange={e => (edit = e)}>
+        <Children childrenKey="children" type="a">
+          {getDropProps => {
+            dropProps = getDropProps(1);
+
+            return (
+              <Node type="a" id="1" index={0}>
+                {getDragProps => {
+                  dragProps = getDragProps();
+                }}
+              </Node>
+            );
+          }}
+        </Children>
+      </Root>
+    );
+
+    runDrag(dragProps)(dropProps);
+
+    expect(edit[0]).toBe(undefined);
   });
 });
