@@ -55,7 +55,7 @@ const hasMoved = (prevPath: Path[], nextPath: Path[]) => {
         return true;
       }
     } else {
-      if (i2 < i1 - 1 || i2 > i1 + 1) {
+      if (i2 < i1 || i2 > i1 + 1) {
         return true;
       }
       return false;
