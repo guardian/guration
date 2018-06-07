@@ -27,10 +27,10 @@ class Dedupe extends React.Component<DedupeProps> {
   }
 
   register = (
-    path: Path[],
-    fields: Object,
     type: string,
     key: string,
+    path: Path[],
+    fields: Object,
     index: number
   ) => {
     if (this.type.indexOf(type) === -1) {

@@ -25,10 +25,10 @@ type NodePropsWithContext = NodeProps & {
   path: Path[],
   fields: Object,
   register: (
-    path: Path[],
-    fields: Object,
     type: string,
     id: string,
+    path: Path[],
+    fields: Object,
     index: number
   ) => void,
   deregister: (type: string, id: string) => void
@@ -47,19 +47,15 @@ class Node extends React.Component<NodePropsWithContext> {
 
   deregister = () => {};
 
-  componentDidMount = () => {
-    const { register, deregister, fields, type, index } = this.props;
-    register(this.path, fields, type, this.dedupeKey, index);
-    this.deregister = () => deregister(type, this.dedupeKey);
-  };
-
-  componentDidUpdate = () => {
+  reregister = () => {
     const { register, deregister, fields, type, index } = this.props;
     this.deregister();
-    register(this.path, fields, type, this.dedupeKey, index);
+    register(type, this.dedupeKey, this.path, fields, index);
     this.deregister = () => deregister(type, this.dedupeKey);
   };
 
+  componentDidMount = () => this.reregister();
+  componentDidUpdate = () => this.reregister();
   componentWillUnmount = () => this.deregister();
 
   getDedupeWrapperAndProps = () =>

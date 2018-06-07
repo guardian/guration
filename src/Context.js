@@ -20,10 +20,10 @@ const PathContext = React.createContext({
 });
 const DedupeContext = React.createContext({
   register: (
-    path: Path[],
-    fields: Object,
     type: string,
     id: string,
+    path: Path[],
+    fields: Object,
     index: number
   ) => {},
   deregister: (type: string, id: string) => {},
