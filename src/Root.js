@@ -19,6 +19,7 @@ type RootProps = {
   dropMappers: {
     [string]: (data: string) => InsertData | string
   },
+  dedupeType?: string | string[],
   children: ReactNode
 };
 
@@ -156,7 +157,12 @@ class Root extends React.Component<RootProps> {
         handleDrop: this.handleDrop
       }}
     >
-      <Node type="@@ROOT" id="@@ROOT" index={0}>
+      <Node
+        type="@@ROOT"
+        id="@@ROOT"
+        index={0}
+        dedupeType={this.props.dedupeType}
+      >
         {this.props.children}
       </Node>
     </RootContext.Provider>

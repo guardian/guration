@@ -1,10 +1,6 @@
 import React from 'react';
 import TestRenderer from 'react-test-renderer';
-import Root from '../Root';
-import Node from '../Node';
-import Dedupe from '../Dedupe';
-import Field from '../Field';
-import Children from '../Children';
+import { Root, Node, Dedupe, Field, Children } from '../index';
 
 class DataTransfer {
   data = {};
@@ -123,19 +119,18 @@ describe('Guration', () => {
         dropMappers={{
           text: str => JSON.parse(str)
         }}
+        dedupeType="a"
       >
-        <Dedupe type="a">
-          <Children childrenKey="children1" type="a">
-            <Node type="a" id={3} index={0}>
-              <Children childrenKey="children2" type="a">
-                {getDropProps => {
-                  dropProps = getDropProps(0);
-                }}
-              </Children>
-            </Node>
-            <Node type="a" id={2} index={1} />
-          </Children>
-        </Dedupe>
+        <Children childrenKey="children1" type="a">
+          <Node type="a" id={3} index={0}>
+            <Children childrenKey="children2" type="a">
+              {getDropProps => {
+                dropProps = getDropProps(0);
+              }}
+            </Children>
+          </Node>
+          <Node type="a" id={2} index={1} />
+        </Children>
       </Root>
     );
 

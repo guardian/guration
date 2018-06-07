@@ -71,4 +71,42 @@ const Children = ({
   </RootContext.Consumer>
 );
 
-export default Children;
+export default ({
+  type,
+  children,
+  childrenKey = `${type}s`
+}: ChildrenProps) => (
+  <RootContext.Consumer>
+    {({ handleDrop }) => (
+      <PathContext.Consumer>
+        {({ path, fields }) => (
+          <DedupeContext.Consumer>
+            {({ getDuplicate }) => (
+              <PathContext.Provider
+                value={{
+                  path: updatePath(path, childrenKey),
+                  fields,
+                  type
+                }}
+              >
+                {typeof children === 'function'
+                  ? children(i => ({
+                      onDragOver: e => e.preventDefault(),
+                      onDrop: handleDrop(
+                        [
+                          ...updatePath(path, childrenKey),
+                          { type, index: i, id: '@@DROP' }
+                        ],
+                        fields,
+                        getDuplicate
+                      )
+                    }))
+                  : children}
+              </PathContext.Provider>
+            )}
+          </DedupeContext.Consumer>
+        )}
+      </PathContext.Consumer>
+    )}
+  </RootContext.Consumer>
+);
