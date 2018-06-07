@@ -26,12 +26,16 @@ type GetDropProps = (
 type ChildFunc = (getDropProps: GetDropProps) => ReactNode;
 
 type ChildrenProps = {
-  childrenKey: string,
+  childrenKey?: string,
   type: string,
   children: ChildFunc | ReactNode
 };
 
-const Children = ({ childrenKey, type, children }: ChildrenProps) => (
+const Children = ({
+  type,
+  children,
+  childrenKey = `${type}s`
+}: ChildrenProps) => (
   <RootContext.Consumer>
     {({ handleDrop }) => (
       <PathContext.Consumer>
