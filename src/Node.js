@@ -65,7 +65,7 @@ class Node extends React.Component<NodePropsWithContext> {
     return (
       <RootContext.Consumer>
         {({ handleDragStart }) => (
-          <PathContext.Provider value={{ path: this.path, fields }}>
+          <PathContext.Provider value={{ path: this.path, fields, type }}>
             {typeof children === 'function'
               ? children(() => ({
                   draggable: true,
@@ -81,11 +81,12 @@ class Node extends React.Component<NodePropsWithContext> {
 
 export default (props: NodeProps) => (
   <PathContext.Consumer>
-    {({ path, fields }) => (
+    {({ path, fields, type }) => (
       <DedupeContext.Consumer>
         {({ register, deregister }) => (
           <Node
             {...props}
+            type={type}
             register={register}
             deregister={deregister}
             path={path}

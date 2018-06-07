@@ -45,7 +45,8 @@ const Children = ({
               <PathContext.Provider
                 value={{
                   path: updatePath(path, childrenKey),
-                  fields
+                  fields,
+                  type
                 }}
               >
                 {typeof children === 'function'

@@ -20,11 +20,12 @@ const Field = ({ type, value, children }: FieldProps) => (
   <RootContext.Consumer>
     {({ handleDrop }) => (
       <PathContext.Consumer>
-        {({ path, fields }) => (
+        {({ path, fields, ...pathContext }) => (
           <DedupeContext.Consumer>
             {({ getDuplicate }) => (
               <PathContext.Provider
                 value={{
+                  ...pathContext,
                   path,
                   fields: { ...fields, [type]: value }
                 }}

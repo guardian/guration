@@ -6,16 +6,18 @@ import { type MoveData } from './types/Data';
 import { type GetDuplicate } from './Dedupe';
 
 const RootContext = React.createContext({
-  handleDragStart: (
-    path: Path[],
-    fields: Object,
-    type: string
-  ) => (e: DragEvent) => {},
+  handleDragStart: (path: Path[], fields: Object, type: string) => (
+    e: DragEvent
+  ) => {},
   handleDrop: (path: Path[], fields: Object, getDuplicate: GetDuplicate) => (
     e: DragEvent
   ) => {}
 });
-const PathContext = React.createContext({ path: [], fields: {} });
+const PathContext = React.createContext({
+  path: [],
+  fields: {},
+  type: '@@ROOT'
+});
 const DedupeContext = React.createContext({
   register: (
     path: Path[],

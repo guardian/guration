@@ -45,18 +45,20 @@ describe('Guration', () => {
 
     TestRenderer.create(
       <Root onChange={e => (edit = e)}>
-        <Node type="a" id="1" index={0}>
-          {getDragProps => {
-            dragProps = getDragProps();
-          }}
-        </Node>
-        <Node type="a" id="2" index={1}>
-          <Children childrenKey="children" type="a">
-            {getDropProps => {
-              dropProps = getDropProps(1);
+        <Children type="a">
+          <Node type="a" id="1" index={0}>
+            {getDragProps => {
+              dragProps = getDragProps();
             }}
-          </Children>
-        </Node>
+          </Node>
+          <Node type="a" id="2" index={1}>
+            <Children childrenKey="children" type="a">
+              {getDropProps => {
+                dropProps = getDropProps(1);
+              }}
+            </Children>
+          </Node>
+        </Children>
       </Root>
     );
 
@@ -76,13 +78,15 @@ describe('Guration', () => {
           text: str => JSON.parse(str)
         }}
       >
-        <Node type="a" id={2} index={0}>
-          <Children childrenKey="children" type="a">
-            {getDropProps => {
-              dropProps = getDropProps(1);
-            }}
-          </Children>
-        </Node>
+        <Children type="a">
+          <Node type="a" id={2} index={0}>
+            <Children childrenKey="children" type="a">
+              {getDropProps => {
+                dropProps = getDropProps(1);
+              }}
+            </Children>
+          </Node>
+        </Children>
       </Root>
     );
 
@@ -293,20 +297,22 @@ describe('Guration', () => {
 
     TestRenderer.create(
       <Root onChange={e => (edit = e)}>
-        <Field type="f" value={0}>
-          <Node type="a" id="1" index={0}>
-            {getDragProps => {
-              dragProps = getDragProps();
-            }}
-          </Node>
-          <Node type="a" id="2" index={1}>
-            <Children childrenKey="children" type="a">
-              {getDropProps => {
-                dropProps = getDropProps(1);
+        <Children type="a">
+          <Field type="f" value={0}>
+            <Node type="a" id="1" index={0}>
+              {getDragProps => {
+                dragProps = getDragProps();
               }}
-            </Children>
-          </Node>
-        </Field>
+            </Node>
+            <Node type="a" id="2" index={1}>
+              <Children childrenKey="children" type="a">
+                {getDropProps => {
+                  dropProps = getDropProps(1);
+                }}
+              </Children>
+            </Node>
+          </Field>
+        </Children>
       </Root>
     );
 
@@ -340,6 +346,6 @@ describe('Guration', () => {
 
     runDrag(dragProps)(dropProps);
 
-    expect(edit[0]).toBe(undefined);
+    expect(edit).toBe(undefined);
   });
 });
