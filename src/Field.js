@@ -1,52 +1,28 @@
 // @flow
 
 import React, { type Node as ReactNode } from 'react';
-import { RootContext, PathContext, DedupeContext } from './Context';
-
-type GetDropProps = (i: number) => ({
-  onDragOver: (e: DragEvent) => void,
-  onDrop: (e: DragEvent) => void
-})
-
-type ChildFunc = (getDropProps: GetDropProps) => ReactNode;
+import { PathContext } from './Context';
 
 type FieldProps = {
   type: string,
   value: string | number | boolean,
-  children: ReactNode | ChildFunc
+  children: ReactNode
 };
 
 const Field = ({ type, value, children }: FieldProps) => (
-  <RootContext.Consumer>
-    {({ handleDrop }) => (
-      <PathContext.Consumer>
-        {({ path, fields, ...pathContext }) => (
-          <DedupeContext.Consumer>
-            {({ getDuplicate }) => (
-              <PathContext.Provider
-                value={{
-                  ...pathContext,
-                  path,
-                  fields: { ...fields, [type]: value }
-                }}
-              >
-                {typeof children === 'function'
-                  ? children(i => ({
-                      onDragOver: e => e.preventDefault(),
-                      onDrop: handleDrop(
-                        path,
-                        { ...fields, [type]: value },
-                        getDuplicate
-                      )
-                    }))
-                  : children}
-              </PathContext.Provider>
-            )}
-          </DedupeContext.Consumer>
-        )}
-      </PathContext.Consumer>
+  <PathContext.Consumer>
+    {({ path, fields, ...pathContext }) => (
+      <PathContext.Provider
+        value={{
+          ...pathContext,
+          path,
+          fields: { ...fields, [type]: value }
+        }}
+      >
+        {children}
+      </PathContext.Provider>
     )}
-  </RootContext.Consumer>
+  </PathContext.Consumer>
 );
 
 export default Field;
