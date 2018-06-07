@@ -31,78 +31,66 @@ type ChildrenProps = {
   children: ChildFunc | ReactNode
 };
 
-const Children = ({
-  type,
-  children,
-  childrenKey = `${type}s`
-}: ChildrenProps) => (
-  <RootContext.Consumer>
-    {({ handleDrop }) => (
-      <PathContext.Consumer>
-        {({ path, fields }) => (
-          <DedupeContext.Consumer>
-            {({ getDuplicate }) => (
-              <PathContext.Provider
-                value={{
-                  path: updatePath(path, childrenKey),
-                  fields,
-                  type
-                }}
-              >
-                {typeof children === 'function'
-                  ? children(i => ({
-                      onDragOver: e => e.preventDefault(),
-                      onDrop: handleDrop(
-                        [
-                          ...updatePath(path, childrenKey),
-                          { type, index: i, id: '@@DROP' }
-                        ],
-                        fields,
-                        getDuplicate
-                      )
-                    }))
-                  : children}
-              </PathContext.Provider>
-            )}
-          </DedupeContext.Consumer>
-        )}
-      </PathContext.Consumer>
-    )}
-  </RootContext.Consumer>
-);
+type ChildrenPropsWithContext = ChildrenProps & {
+  handleDrop: *,
+  path: Path[],
+  fields: Object,
+  getDuplicate: *
+};
 
-export default ({
-  type,
-  children,
-  childrenKey = `${type}s`
-}: ChildrenProps) => (
+class Children extends React.Component<ChildrenPropsWithContext> {
+  get childrenKey() {
+    return this.props.childrenKey || `${this.props.type}s`;
+  }
+
+  getDragProps = i => {
+    const { childrenKey } = this;
+    const { type, handleDrop, path, fields, getDuplicate } = this.props;
+
+    return {
+      onDragOver: e => e.preventDefault(),
+      onDrop: handleDrop(
+        [...updatePath(path, childrenKey), { type, index: i, id: '@@DROP' }],
+        fields,
+        getDuplicate
+      )
+    };
+  };
+
+  render() {
+    const { childrenKey } = this;
+    const { type, children, path, fields } = this.props;
+
+    return (
+      <PathContext.Provider
+        value={{
+          path: updatePath(path, childrenKey),
+          fields,
+          type
+        }}
+      >
+        {typeof children === 'function'
+          ? children(this.getDragProps)
+          : children}
+      </PathContext.Provider>
+    );
+  }
+}
+
+export default (props: ChildrenProps) => (
   <RootContext.Consumer>
     {({ handleDrop }) => (
       <PathContext.Consumer>
         {({ path, fields }) => (
           <DedupeContext.Consumer>
             {({ getDuplicate }) => (
-              <PathContext.Provider
-                value={{
-                  path: updatePath(path, childrenKey),
-                  fields,
-                  type
-                }}
-              >
-                {typeof children === 'function'
-                  ? children(i => ({
-                      onDragOver: e => e.preventDefault(),
-                      onDrop: handleDrop(
-                        [
-                          ...updatePath(path, childrenKey),
-                          { type, index: i, id: '@@DROP' }
-                        ],
-                        fields,
-                        getDuplicate
-                      )
-                    }))
-                  : children}
-              </PathContext.Provider>
+              <Children
+                {...props}
+                handleDrop={handleDrop}
+                path={path}
+                fields={fields}
+                getDuplicate={getDuplicate}
+              />
             )}
           </DedupeContext.Consumer>
         )}
