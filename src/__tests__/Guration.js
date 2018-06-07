@@ -1,6 +1,6 @@
 import React from 'react';
 import TestRenderer from 'react-test-renderer';
-import { Root, Node, Dedupe, Field, Children } from '../index';
+import { Root, Node, Field, Children } from '../index';
 
 class DataTransfer {
   data = {};
@@ -40,7 +40,7 @@ describe('Guration', () => {
     let edit;
 
     TestRenderer.create(
-      <Root onChange={e => (edit = e)}>
+      <Root type="@@ROOT" id="@@ROOT" onChange={e => (edit = e)}>
         <Children type="a">
           <Node type="a" id="1" index={0}>
             {getDragProps => {
@@ -68,7 +68,7 @@ describe('Guration', () => {
     let edit;
 
     TestRenderer.create(
-      <Root
+      <Root type="@@ROOT" id="@@ROOT"
         onChange={e => (edit = e)}
         dropMappers={{
           text: str => JSON.parse(str)
@@ -114,7 +114,7 @@ describe('Guration', () => {
     let edit;
 
     TestRenderer.create(
-      <Root
+      <Root type="@@ROOT" id="@@ROOT"
         onChange={e => (edit = e)}
         dropMappers={{
           text: str => JSON.parse(str)
@@ -166,7 +166,7 @@ describe('Guration', () => {
     let error;
 
     TestRenderer.create(
-      <Root onError={e => (error = e)}>
+      <Root type="@@ROOT" id="@@ROOT" onError={e => (error = e)}>
         <Children childrenKey="children" type="a">
           <Node type="a" id={2} index={0}>
             {getDragProps => {
@@ -195,7 +195,7 @@ describe('Guration', () => {
     let error;
 
     TestRenderer.create(
-      <Root onError={e => (error = e)}>
+      <Root type="@@ROOT" id="@@ROOT" onError={e => (error = e)}>
         <Children childrenKey="children" type="a">
           <Node type="a" id={2} index={0}>
             {getDragProps => {
@@ -222,7 +222,7 @@ describe('Guration', () => {
     let edit;
 
     TestRenderer.create(
-      <Root onChange={e => (edit = e)}>
+      <Root type="@@ROOT" id="@@ROOT" onChange={e => (edit = e)}>
         <Node type="b" id={1} index={0}>
           <Children childrenKey="children" type="a">
             {getDropProps => {
@@ -251,7 +251,7 @@ describe('Guration', () => {
     let edit;
 
     TestRenderer.create(
-      <Root onChange={e => (edit = e)}>
+      <Root type="@@ROOT" id="@@ROOT" onChange={e => (edit = e)}>
         <Field type="b" value={1}>
           <Children childrenKey="children1" type="a">
             <Node type="a" id={2} index={0}>
@@ -291,7 +291,7 @@ describe('Guration', () => {
     let edit;
 
     TestRenderer.create(
-      <Root onChange={e => (edit = e)}>
+      <Root type="@@ROOT" id="@@ROOT" onChange={e => (edit = e)}>
         <Children type="a">
           <Field type="f" value={0}>
             <Node type="a" id="1" index={0}>
@@ -322,7 +322,7 @@ describe('Guration', () => {
     let edit;
 
     TestRenderer.create(
-      <Root onChange={e => (edit = e)}>
+      <Root type="@@ROOT" id="@@ROOT" onChange={e => (edit = e)}>
         <Children childrenKey="children" type="a">
           {getDropProps => {
             dropProps = getDropProps(1);

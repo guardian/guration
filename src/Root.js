@@ -1,7 +1,7 @@
 // @flow
 
 import React, { type Node as ReactNode } from 'react';
-import { RootContext } from './Context';
+import { RootContext, PathContext } from './Context';
 import Node from './Node';
 import { move, insert, update } from './Edits';
 import { isSubPath, pathForMove, hasMoved } from './utils/PathUtils';
@@ -14,6 +14,8 @@ import { type GetDuplicate } from './Dedupe';
 const INTERNAL_TRANSFER_TYPE = '@@TRANSFER';
 
 type RootProps = {
+  type: string,
+  id: string,
   onChange: (edits: Edit[]) => void,
   onError: (error: string) => void,
   dropMappers: {
@@ -150,23 +152,27 @@ class Root extends React.Component<RootProps> {
     }
   }
 
-  render = () => (
-    <RootContext.Provider
-      value={{
-        handleDragStart: this.handleDragStart,
-        handleDrop: this.handleDrop
-      }}
-    >
-      <Node
-        type="@@ROOT"
-        id="@@ROOT"
-        index={0}
-        dedupeType={this.props.dedupeType}
-      >
-        {this.props.children}
-      </Node>
-    </RootContext.Provider>
-  );
+  render() {
+    const { type, id, dedupeType, children } = this.props;
+    return (
+      <PathContext.Consumer>
+        {({ ...pathContext }) => (
+          <PathContext.Provider value={{ ...pathContext, type }}>
+            <RootContext.Provider
+              value={{
+                handleDragStart: this.handleDragStart,
+                handleDrop: this.handleDrop
+              }}
+            >
+              <Node type={type} id={id} index={0} dedupeType={dedupeType}>
+                {children}
+              </Node>
+            </RootContext.Provider>
+          </PathContext.Provider>
+        )}
+      </PathContext.Consumer>
+    );
+  }
 }
 
 export default Root;
