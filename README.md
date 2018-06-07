@@ -3,8 +3,10 @@
 A module that allows you to validate drag and drop actions on a tree of data, culminating in 'edits' that describe the modification on a normalized data structure.
 
 ```js
+const renderDrop = (getProps, i) => <DropZone {...getProps(i)} />;
+
 const Front = ({ f }) => (
-  <GU.Root type="front" id={f.id}>
+  <GU.Root type="front" id={f.id} onChange={edits => console.log(edits)}>
     <GU.Children type="collection">
       {/* specify a type that can be dropped as children of this position */}
       <GU.RenderChildren arr={f.collections} renderDrop={renderDrop}>
