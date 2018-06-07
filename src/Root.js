@@ -111,12 +111,16 @@ class Root extends React.Component<RootProps> {
 
     const changedFields = getChangedFields(dragFields, fields);
 
-    this.props.onChange(
-      [
-        hasMoved(dragPath, path) && move(type, id, dragPath, movePath, index),
-        hasFields(changedFields) && update(type, id, changedFields)
-      ].filter(Boolean)
-    );
+    const edits = [
+      hasMoved(dragPath, path)
+        ? move(type, id, dragPath, movePath, index)
+        : null,
+      hasFields(changedFields) ? update(type, id, changedFields) : null
+    ].filter(Boolean);
+
+    if (edits.length) {
+      this.props.onChange(edits);
+    }
   }
 
   handleInsert(
@@ -139,7 +143,7 @@ class Root extends React.Component<RootProps> {
       this.props.onChange(
         [
           insert(type, id, path, index),
-          hasFields(fields) && update(type, id, fields)
+          hasFields(fields) ? update(type, id, fields) : null
         ].filter(Boolean)
       );
     }
