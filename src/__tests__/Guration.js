@@ -1,6 +1,6 @@
 import React from 'react';
 import TestRenderer from 'react-test-renderer';
-import { Root, Node, Field, Children, Dedupe } from '../index';
+import { Root, Node, Field, Children, Level, Dedupe } from '../index';
 
 class DataTransfer {
   data = {};
@@ -347,5 +347,40 @@ describe('Guration', () => {
     runDrag(dragProps)(dropProps);
 
     expect(edit).toBe(undefined);
+  });
+
+  it('disallows adding more than maxChildren', () => {
+    let dropProps;
+    let error;
+
+    TestRenderer.create(
+      <Root
+        type="@@ROOT"
+        id="@@ROOT"
+        onError={e => (error = e)}
+        dropMappers={{
+          text: str => JSON.parse(str)
+        }}
+      >
+        <Level
+          type="a"
+          arr={[{ id: 1 }]}
+          maxChildren={1}
+          renderDrop={props => {
+            // should be the 2nd drop after all reassignments
+            dropProps = props;
+          }}
+        >
+          {child => null}
+        </Level>
+      </Root>
+    );
+
+    runDrag('text', {
+      type: 'a',
+      id: 2
+    })(dropProps);
+
+    expect(error).toBeTruthy();
   });
 });
