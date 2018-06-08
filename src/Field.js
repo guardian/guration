@@ -11,11 +11,10 @@ type FieldProps = {
 
 const Field = ({ type, value, children }: FieldProps) => (
   <PathContext.Consumer>
-    {({ path, fields, ...pathContext }) => (
+    {({ fields, ...pathContext }) => (
       <PathContext.Provider
         value={{
           ...pathContext,
-          path,
           fields: { ...fields, [type]: value }
         }}
       >

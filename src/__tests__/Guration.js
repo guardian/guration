@@ -1,6 +1,6 @@
 import React from 'react';
 import TestRenderer from 'react-test-renderer';
-import { Root, Node, Field, Children } from '../index';
+import { Root, Node, Field, Children, Dedupe } from '../index';
 
 class DataTransfer {
   data = {};
@@ -48,7 +48,7 @@ describe('Guration', () => {
             }}
           </Node>
           <Node type="a" id="2" index={1}>
-            <Children childrenKey="children" type="a">
+            <Children field="children" type="a">
               {getDropProps => {
                 dropProps = getDropProps(1);
               }}
@@ -68,7 +68,9 @@ describe('Guration', () => {
     let edit;
 
     TestRenderer.create(
-      <Root type="@@ROOT" id="@@ROOT"
+      <Root
+        type="@@ROOT"
+        id="@@ROOT"
         onChange={e => (edit = e)}
         dropMappers={{
           text: str => JSON.parse(str)
@@ -76,7 +78,7 @@ describe('Guration', () => {
       >
         <Children type="a">
           <Node type="a" id={2} index={0}>
-            <Children childrenKey="children" type="a">
+            <Children field="children" type="a">
               {getDropProps => {
                 dropProps = getDropProps(1);
               }}
@@ -101,7 +103,7 @@ describe('Guration', () => {
             type: 'a',
             id: 2,
             index: 0,
-            childrenKey: 'children'
+            childrenField: 'children'
           },
           index: 1
         }
@@ -114,23 +116,26 @@ describe('Guration', () => {
     let edit;
 
     TestRenderer.create(
-      <Root type="@@ROOT" id="@@ROOT"
+      <Root
+        type="@@ROOT"
+        id="@@ROOT"
         onChange={e => (edit = e)}
         dropMappers={{
           text: str => JSON.parse(str)
         }}
-        dedupeType="a"
       >
-        <Children childrenKey="children1" type="a">
-          <Node type="a" id={3} index={0}>
-            <Children childrenKey="children2" type="a">
-              {getDropProps => {
-                dropProps = getDropProps(0);
-              }}
-            </Children>
-          </Node>
-          <Node type="a" id={2} index={1} />
-        </Children>
+        <Dedupe type="a">
+          <Children field="children1" type="a">
+            <Node type="a" id={3} index={0}>
+              <Children field="children2" type="a">
+                {getDropProps => {
+                  dropProps = getDropProps(0);
+                }}
+              </Children>
+            </Node>
+            <Node type="a" id={2} index={1} />
+          </Children>
+        </Dedupe>
       </Root>
     );
 
@@ -143,7 +148,7 @@ describe('Guration', () => {
       payload: {
         from: {
           parent: {
-            childrenKey: 'children1',
+            childrenField: 'children1',
             id: '@@ROOT',
             index: 0,
             type: '@@ROOT'
@@ -151,7 +156,7 @@ describe('Guration', () => {
         },
         id: 2,
         to: {
-          parent: { id: 3, index: 0, type: 'a', childrenKey: 'children2' },
+          parent: { id: 3, index: 0, type: 'a', childrenField: 'children2' },
           index: 0
         },
         type: 'a'
@@ -167,12 +172,12 @@ describe('Guration', () => {
 
     TestRenderer.create(
       <Root type="@@ROOT" id="@@ROOT" onError={e => (error = e)}>
-        <Children childrenKey="children" type="a">
+        <Children field="children" type="a">
           <Node type="a" id={2} index={0}>
             {getDragProps => {
               dragProps = getDragProps();
               return (
-                <Children childrenKey="children" type="a">
+                <Children field="children" type="a">
                   {getDropProps => {
                     dropProps = getDropProps(1);
                   }}
@@ -196,14 +201,14 @@ describe('Guration', () => {
 
     TestRenderer.create(
       <Root type="@@ROOT" id="@@ROOT" onError={e => (error = e)}>
-        <Children childrenKey="children" type="a">
+        <Children field="children" type="a">
           <Node type="a" id={2} index={0}>
             {getDragProps => {
               dragProps = getDragProps();
             }}
           </Node>
         </Children>
-        <Children childrenKey="other" type="b">
+        <Children field="other" type="b">
           {getDropProps => {
             dropProps = getDropProps(1);
           }}
@@ -224,7 +229,7 @@ describe('Guration', () => {
     TestRenderer.create(
       <Root type="@@ROOT" id="@@ROOT" onChange={e => (edit = e)}>
         <Node type="b" id={1} index={0}>
-          <Children childrenKey="children" type="a">
+          <Children field="children" type="a">
             {getDropProps => {
               dropProps = getDropProps(3);
               return (
@@ -253,7 +258,7 @@ describe('Guration', () => {
     TestRenderer.create(
       <Root type="@@ROOT" id="@@ROOT" onChange={e => (edit = e)}>
         <Field type="b" value={1}>
-          <Children childrenKey="children1" type="a">
+          <Children field="children1" type="a">
             <Node type="a" id={2} index={0}>
               {getDragProps => {
                 dragProps = getDragProps();
@@ -262,7 +267,7 @@ describe('Guration', () => {
           </Children>
         </Field>
         <Field type="b" value={2}>
-          <Children childrenKey="children2" type="a">
+          <Children field="children2" type="a">
             {getDropProps => {
               dropProps = getDropProps(0);
             }}
@@ -300,7 +305,7 @@ describe('Guration', () => {
               }}
             </Node>
             <Node type="a" id="2" index={1}>
-              <Children childrenKey="children" type="a">
+              <Children field="children" type="a">
                 {getDropProps => {
                   dropProps = getDropProps(1);
                 }}
@@ -323,7 +328,7 @@ describe('Guration', () => {
 
     TestRenderer.create(
       <Root type="@@ROOT" id="@@ROOT" onChange={e => (edit = e)}>
-        <Children childrenKey="children" type="a">
+        <Children field="children" type="a">
           {getDropProps => {
             dropProps = getDropProps(1);
 

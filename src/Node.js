@@ -14,14 +14,13 @@ type ChildFunc = (getDropProps: GetDropProps) => ReactNode;
 
 type NodeProps = {
   children: ChildFunc | ReactNode,
-  type: string,
   id: string,
-  dedupeType?: string | string[],
   dedupeKey?: string,
   index: number
 };
 
 type NodePropsWithContext = NodeProps & {
+  type: string,
   path: Path[],
   fields: Object,
   register: (
@@ -58,31 +57,19 @@ class Node extends React.Component<NodePropsWithContext> {
   componentDidUpdate = () => this.reregister();
   componentWillUnmount = () => this.deregister();
 
-  getDedupeWrapperAndProps = () =>
-    this.props.dedupeType
-      ? {
-          Wrapper: Dedupe,
-          props: { type: this.props.dedupeType }
-        }
-      : { Wrapper: React.Fragment, props: {} };
-
   render = () => {
-    const { children, dedupeType, fields, type, id, index } = this.props;
-
-    const { Wrapper, props } = this.getDedupeWrapperAndProps();
+    const { children, fields, type, id, index } = this.props;
 
     return (
       <RootContext.Consumer>
         {({ handleDragStart }) => (
           <PathContext.Provider value={{ path: this.path, fields, type }}>
-            <Wrapper {...props}>
-              {typeof children === 'function'
-                ? children(() => ({
-                    draggable: true,
-                    onDragStart: handleDragStart(this.path, fields, type)
-                  }))
-                : children}
-            </Wrapper>
+            {typeof children === 'function'
+              ? children(() => ({
+                  draggable: true,
+                  onDragStart: handleDragStart(this.path, fields, type)
+                }))
+              : children}
           </PathContext.Provider>
         )}
       </RootContext.Consumer>

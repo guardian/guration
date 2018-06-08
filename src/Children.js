@@ -14,7 +14,7 @@ type GetDropProps = (
 type ChildFunc = (getDropProps: GetDropProps) => ReactNode;
 
 type ChildrenProps = {
-  childrenKey?: string,
+  field?: string,
   type: string,
   children: ChildFunc | ReactNode
 };
@@ -27,12 +27,12 @@ type ChildrenPropsWithContext = ChildrenProps & {
 };
 
 class Children extends React.Component<ChildrenPropsWithContext> {
-  get childrenKey() {
-    return this.props.childrenKey || `${this.props.type}s`;
+  get field() {
+    return this.props.field || `${this.props.type}s`;
   }
 
   get path() {
-    const { childrenKey } = this;
+    const { field } = this;
     const { path } = this.props;
     const parent = path[path.length - 1];
 
@@ -40,12 +40,12 @@ class Children extends React.Component<ChildrenPropsWithContext> {
       ...path.slice(0, path.length - 1),
       {
         ...parent,
-        childrenKey
+        childrenField: field
       }
     ];
   }
 
-  getDragProps = i => {
+  getDropProps = i => {
     const { type, handleDrop, path, fields, getDuplicate } = this.props;
 
     return {
@@ -59,7 +59,7 @@ class Children extends React.Component<ChildrenPropsWithContext> {
   };
 
   render() {
-    const { childrenKey, path } = this;
+    const { path } = this;
     const { type, children, fields } = this.props;
 
     return (
@@ -71,7 +71,7 @@ class Children extends React.Component<ChildrenPropsWithContext> {
         }}
       >
         {typeof children === 'function'
-          ? children(this.getDragProps)
+          ? children(this.getDropProps)
           : children}
       </PathContext.Provider>
     );

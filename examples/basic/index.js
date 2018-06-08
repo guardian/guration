@@ -6306,30 +6306,69 @@
 	});
 	const PathContext = react.createContext({
 	  path: [],
-	  fields: {}
+	  fields: {},
+	  type: '@@ROOT'
 	});
 	const DedupeContext = react.createContext({
-	  register: (path, fields, type, id, index) => {},
+	  register: (type, id, path, fields, index) => {},
 	  deregister: (type, id) => {},
 	  getDuplicate: (type, id) => null
 	});
+
+	class Dedupe extends react.Component {
+	  constructor(...args) {
+	    var _temp;
+
+	    return _temp = super(...args), _defineProperty(this, "context", {}), _defineProperty(this, "register", (type, key, path, fields, index) => {
+	      if (this.type.indexOf(type) === -1) {
+	        return;
+	      }
+
+	      const prevOfType = this.context[type] || {};
+	      this.context = _objectSpread({}, this.context, {
+	        [type]: _objectSpread({}, prevOfType, {
+	          [key]: {
+	            path,
+	            fields,
+	            index
+	          }
+	        })
+	      });
+	    }), _defineProperty(this, "deregister", (type, key) => {
+	      const prevOfType = this.context[type] || {};
+	      this.context = _objectSpread({}, this.context, {
+	        [type]: _objectSpread({}, Object.keys(prevOfType).filter(key2 => key2 !== key).reduce((acc, key2) => _objectSpread({}, acc, {
+	          [key2]: prevOfType[key2]
+	        }), {}))
+	      });
+	    }), _defineProperty(this, "getDuplicate", (type, key) => (this.context[type] || {})[key] || null), _defineProperty(this, "render", () => {
+	      const {
+	        children
+	      } = this.props;
+	      return react.createElement(DedupeContext.Provider, {
+	        value: {
+	          register: this.register,
+	          deregister: this.deregister,
+	          getDuplicate: this.getDuplicate
+	        }
+	      }, children);
+	    }), _temp;
+	  }
+
+	  get type() {
+	    const {
+	      type
+	    } = this.props;
+	    return Array.isArray(type) ? type : [type];
+	  }
+
+	}
 
 	class Node extends react.Component {
 	  constructor(...args) {
 	    var _temp;
 
-	    return _temp = super(...args), _defineProperty(this, "deregister", () => {}), _defineProperty(this, "componentDidMount", () => {
-	      const {
-	        register,
-	        deregister,
-	        fields,
-	        type,
-	        index
-	      } = this.props;
-	      register(this.path, fields, type, this.dedupeKey, index);
-
-	      this.deregister = () => deregister(type, this.dedupeKey);
-	    }), _defineProperty(this, "componentDidUpdate", () => {
+	    return _temp = super(...args), _defineProperty(this, "deregister", () => {}), _defineProperty(this, "reregister", () => {
 	      const {
 	        register,
 	        deregister,
@@ -6338,10 +6377,10 @@
 	        index
 	      } = this.props;
 	      this.deregister();
-	      register(this.path, fields, type, this.dedupeKey, index);
+	      register(type, this.dedupeKey, this.path, fields, index);
 
 	      this.deregister = () => deregister(type, this.dedupeKey);
-	    }), _defineProperty(this, "componentWillUnmount", () => this.deregister()), _defineProperty(this, "render", () => {
+	    }), _defineProperty(this, "componentDidMount", () => this.reregister()), _defineProperty(this, "componentDidUpdate", () => this.reregister()), _defineProperty(this, "componentWillUnmount", () => this.deregister()), _defineProperty(this, "render", () => {
 	      const {
 	        children,
 	        fields,
@@ -6354,7 +6393,8 @@
 	      }) => react.createElement(PathContext.Provider, {
 	        value: {
 	          path: this.path,
-	          fields
+	          fields,
+	          type
 	        }
 	      }, typeof children === 'function' ? children(() => ({
 	        draggable: true,
@@ -6389,11 +6429,13 @@
 
 	var Node$1 = (props => react.createElement(PathContext.Consumer, null, ({
 	  path,
-	  fields
+	  fields,
+	  type
 	}) => react.createElement(DedupeContext.Consumer, null, ({
 	  register,
 	  deregister
 	}) => react.createElement(Node, _extends({}, props, {
+	  type: type,
 	  register: register,
 	  deregister: deregister,
 	  path: path,
@@ -6440,14 +6482,14 @@
 	  const {
 	    index: i1,
 	    type: t1,
-	    childrenKey: c1
+	    childrenField: c1
 	  } = el;
 	  const {
 	    index: i2,
 	    type: t2,
-	    childrenKey: c2
+	    childrenField: c2
 	  } = candidate[i]; // we're still a sub path if the we're on the last and it doesn't have a
-	  // childrenKey
+	  // childrenField
 
 	  return !isNaN(i1) && i1 !== i2 || t1 && t1 !== t2 || c1 !== c2 && i !== path.length - 1;
 	});
@@ -6461,11 +6503,11 @@
 	      id: kt,
 	      index: it,
 	      type: tt,
-	      childrenKey: ct
+	      childrenField: ct
 	    } = targetPathSpec || {};
 	    const {
 	      index: is,
-	      childrenKey: cs
+	      childrenField: cs
 	    } = source[i] || {};
 
 	    if (i < source.length - 1 && (is !== it || ct !== cs)) {
@@ -6475,7 +6517,7 @@
 	        id: kt,
 	        index: it - 1,
 	        type: tt,
-	        childrenKey: ct
+	        childrenField: ct
 	      });
 	    } else {
 	      newPath.push(targetPathSpec);
@@ -6483,6 +6525,40 @@
 	  }
 
 	  return newPath;
+	};
+
+	const hasMoved = (prevPath, nextPath) => {
+	  if (prevPath.length !== nextPath.length) {
+	    return true;
+	  }
+
+	  for (let i = 0; i < prevPath.length; i += 1) {
+	    const {
+	      index: i1,
+	      childrenField: c1
+	    } = prevPath[i];
+	    const {
+	      index: i2,
+	      childrenField: c2
+	    } = nextPath[i];
+
+	    if (i < prevPath.length - 1) {
+	      if (c1 !== c2) {
+	        return true;
+	      } else if (i1 !== i2) {
+	        return true;
+	      }
+	    } else {
+	      if (i2 < i1 || i2 > i1 + 1) {
+	        return true;
+	      }
+
+	      return false;
+	    }
+	  } // incase we have empty paths?
+
+
+	  return false;
 	};
 
 	const getChangedFields = (prevFields, nextFields) => Object.entries(_objectSpread({}, prevFields, nextFields)).filter(([key, val]) => val !== prevFields[key]).reduce((acc, [key, val]) => _objectSpread({}, acc, {
@@ -6525,22 +6601,15 @@
 	      }
 
 	      const data = this.getDropData(e);
+	      console.log(data);
 
-	      if (!data) {
+	      if (typeof data === 'string') {
+	        this.props.onError(data);
 	        return;
 	      }
 
 	      this.handleInsert(data, path, fields, getDuplicate);
-	    }), _defineProperty(this, "render", () => react.createElement(RootContext.Provider, {
-	      value: {
-	        handleDragStart: this.handleDragStart,
-	        handleDrop: this.handleDrop
-	      }
-	    }, react.createElement(Node$1, {
-	      type: "@@ROOT",
-	      id: "@@ROOT",
-	      index: 0
-	    }, this.props.children))), _temp;
+	    }), _temp;
 	  }
 
 	  getDropData(e) {
@@ -6552,13 +6621,13 @@
 	    } = e;
 
 	    if (!dataTransfer) {
-	      return;
+	      return 'Unable to drop';
 	    }
 
 	    const type = Object.keys(dropMappers).find(key => dataTransfer.getData(key));
 
 	    if (!type) {
-	      return null;
+	      return 'Unable to drop this';
 	    }
 
 	    return dropMappers[type](dataTransfer.getData(type));
@@ -6590,11 +6659,14 @@
 	    const movePath = pathForMove(dragPath, path);
 	    const {
 	      index
-	    } = movePath[movePath.length - 1]; // TODO: find the changed fields
-
+	    } = movePath[movePath.length - 1];
 	    const changedFields = getChangedFields(dragFields, fields);
-	    console.log(changedFields, hasFields(changedFields));
-	    this.props.onChange([move(type, id, dragPath, movePath, index), hasFields(changedFields) && update(type, id, changedFields)].filter(Boolean));
+	    console.log(dragPath, path, hasMoved(dragPath, path));
+	    const edits = [hasMoved(dragPath, path) ? move(type, id, dragPath, movePath, index) : null, hasFields(changedFields) ? update(type, id, changedFields) : null].filter(Boolean);
+
+	    if (edits.length) {
+	      this.props.onChange(edits);
+	    }
 	  }
 
 	  handleInsert({
@@ -6612,12 +6684,39 @@
 	    }
 
 	    const duplicate = getDuplicate(dragType, id);
+	    console.log(duplicate);
 
 	    if (duplicate) {
 	      this.handleMove(duplicate, path, fields);
 	    } else {
-	      this.props.onChange([insert(type, id, path, index), hasFields(fields) && update(type, id, fields)].filter(Boolean));
+	      this.props.onChange([insert(type, id, path, index), hasFields(fields) ? update(type, id, fields) : null].filter(Boolean));
 	    }
+	  }
+
+	  render() {
+	    const {
+	      type,
+	      id,
+	      children
+	    } = this.props;
+	    return react.createElement(PathContext.Consumer, null, (_ref) => {
+	      let pathContext = _extends({}, _ref);
+
+	      return react.createElement(PathContext.Provider, {
+	        value: _objectSpread({}, pathContext, {
+	          type
+	        })
+	      }, react.createElement(RootContext.Provider, {
+	        value: {
+	          handleDragStart: this.handleDragStart,
+	          handleDrop: this.handleDrop
+	        }
+	      }, react.createElement(Node$1, {
+	        type: type,
+	        id: id,
+	        index: 0
+	      }, children)));
+	    });
 	  }
 
 	}
@@ -6630,107 +6729,136 @@
 	  type,
 	  value,
 	  children
-	}) => react.createElement(RootContext.Consumer, null, ({
-	  handleDrop
-	}) => react.createElement(PathContext.Consumer, null, ({
-	  path,
-	  fields
-	}) => react.createElement(DedupeContext.Consumer, null, ({
-	  getDuplicate
-	}) => react.createElement(PathContext.Provider, {
-	  value: {
-	    path,
-	    fields: _objectSpread({}, fields, {
-	      [type]: value
-	    })
-	  }
-	}, typeof children === 'function' ? children(i => ({
-	  onDragOver: e => e.preventDefault(),
-	  onDrop: handleDrop(path, _objectSpread({}, fields, {
-	    [type]: value
-	  }), getDuplicate)
-	})) : children))));
-
-	const updatePath = (path, childrenKey) => {
-	  const parent = path[path.length - 1];
-	  return [...path.slice(0, path.length - 1), _objectSpread({}, parent, {
-	    childrenKey
-	  })];
-	};
-
-	const Children = ({
-	  childrenKey,
-	  type,
-	  children
-	}) => react.createElement(RootContext.Consumer, null, ({
-	  handleDrop
-	}) => react.createElement(PathContext.Consumer, null, ({
-	  path,
-	  fields
-	}) => react.createElement(DedupeContext.Consumer, null, ({
-	  getDuplicate
-	}) => react.createElement(PathContext.Provider, {
-	  value: {
-	    path: updatePath(path, childrenKey),
+	}) => react.createElement(PathContext.Consumer, null, (_ref) => {
+	  let {
 	    fields
-	  }
-	}, typeof children === 'function' ? children(i => ({
-	  onDragOver: e => e.preventDefault(),
-	  onDrop: handleDrop([...updatePath(path, childrenKey), {
-	    type,
-	    index: i,
-	    id: '@@DROP'
-	  }], fields, getDuplicate)
-	})) : children))));
+	  } = _ref,
+	      pathContext = _objectWithoutProperties(_ref, ["fields"]);
 
-	class Dedupe extends react.Component {
+	  return react.createElement(PathContext.Provider, {
+	    value: _objectSpread({}, pathContext, {
+	      fields: _objectSpread({}, fields, {
+	        [type]: value
+	      })
+	    })
+	  }, children);
+	});
+
+	class Children extends react.Component {
 	  constructor(...args) {
 	    var _temp;
 
-	    return _temp = super(...args), _defineProperty(this, "context", {}), _defineProperty(this, "register", (path, fields, type, key, index) => {
-	      if (this.type.indexOf(type) === -1) {
-	        return;
-	      }
-
-	      const prevOfType = this.context[type] || {};
-	      this.context = _objectSpread({}, this.context, {
-	        [type]: _objectSpread({}, prevOfType, {
-	          [key]: {
-	            path,
-	            fields,
-	            index
-	          }
-	        })
-	      });
-	    }), _defineProperty(this, "deregister", (type, key) => {
-	      const prevOfType = this.context[type] || {};
-	      this.context = _objectSpread({}, this.context, {
-	        [type]: _objectSpread({}, Object.keys(prevOfType).filter(key2 => key2 !== key).reduce((acc, key2) => _objectSpread({}, acc, {
-	          [key2]: prevOfType[key2]
-	        }), {}))
-	      });
-	    }), _defineProperty(this, "getDuplicate", (type, key) => (this.context[type] || {})[key] || null), _defineProperty(this, "render", () => {
+	    return _temp = super(...args), _defineProperty(this, "getDropProps", i => {
 	      const {
-	        children
+	        type,
+	        handleDrop,
+	        path,
+	        fields,
+	        getDuplicate
 	      } = this.props;
-	      return react.createElement(DedupeContext.Provider, {
-	        value: {
-	          register: this.register,
-	          deregister: this.deregister,
-	          getDuplicate: this.getDuplicate
-	        }
-	      }, children);
+	      return {
+	        onDragOver: e => e.preventDefault(),
+	        onDrop: handleDrop([...this.path, {
+	          type,
+	          index: i,
+	          id: '@@DROP'
+	        }], fields, getDuplicate)
+	      };
 	    }), _temp;
 	  }
 
-	  get type() {
+	  get field() {
+	    return this.props.field || `${this.props.type}s`;
+	  }
+
+	  get path() {
 	    const {
-	      type
+	      field
+	    } = this;
+	    const {
+	      path
 	    } = this.props;
-	    return Array.isArray(type) ? type : [type];
+	    const parent = path[path.length - 1];
+	    return [...path.slice(0, path.length - 1), _objectSpread({}, parent, {
+	      childrenField: field
+	    })];
+	  }
+
+	  render() {
+	    const {
+	      path
+	    } = this;
+	    const {
+	      type,
+	      children,
+	      fields
+	    } = this.props;
+	    return react.createElement(PathContext.Provider, {
+	      value: {
+	        path,
+	        fields,
+	        type
+	      }
+	    }, typeof children === 'function' ? children(this.getDropProps) : children);
 	  }
 
 	}
+
+	var Children$1 = (props => react.createElement(RootContext.Consumer, null, ({
+	  handleDrop
+	}) => react.createElement(PathContext.Consumer, null, ({
+	  path,
+	  fields
+	}) => react.createElement(DedupeContext.Consumer, null, ({
+	  getDuplicate
+	}) => react.createElement(Children, _extends({}, props, {
+	  handleDrop: handleDrop,
+	  path: path,
+	  fields: fields,
+	  getDuplicate: getDuplicate
+	}))))));
+
+	const getDedupeWrapperAndProps = dedupeType => dedupeType ? {
+	  Wrapper: Dedupe,
+	  props: {
+	    type: dedupeType
+	  }
+	} : {
+	  Wrapper: react.Fragment,
+	  props: {}
+	};
+
+	const Level = ({
+	  arr,
+	  type,
+	  key = `${type}s`,
+	  getKey,
+	  getDedupeKey = getKey,
+	  dedupeType,
+	  renderDrop,
+	  children
+	}) => {
+	  const {
+	    Wrapper,
+	    props
+	  } = getDedupeWrapperAndProps(dedupeType);
+	  return react.createElement(Children$1, {
+	    type: type,
+	    key: key
+	  }, getDropProps => react.createElement(Wrapper, props, arr.map((child, i) => react.createElement(react.Fragment, {
+	    key: getKey(child)
+	  }, renderDrop(getDropProps(i)), react.createElement(Node$1, {
+	    id: getKey(child),
+	    dedupeKey: getDedupeKey(child),
+	    index: i
+	  }, getDragProps => children(child, getDragProps)))), renderDrop(getDropProps(arr.length))));
+	};
+
+	Level.defaultProps = {
+	  getKey: ({
+	    id
+	  }) => id
+	};
 
 	const DragZone = ({
 	  children,
@@ -6742,37 +6870,6 @@
 	  onDragStart: e => e.dataTransfer.setData(type, json ? JSON.stringify(data) : data)
 	}, children);
 
-	const Front = ({
-	  collections,
-	  children
-	}) => react.createElement(Children, {
-	  childrenKey: "collections",
-	  type: "collection"
-	}, collections.map((child, i) => react.createElement(react.Fragment, {
-	  key: child.id
-	}, children(child, i))));
-
-	const Indent = props => react.createElement("div", _extends({}, props, {
-	  style: {
-	    marginLeft: '10px'
-	  }
-	}));
-
-	const Collection = ({
-	  id,
-	  index,
-	  groups,
-	  children
-	}) => react.createElement(Node$1, {
-	  type: "collection",
-	  id: id,
-	  index: index
-	}, getDragProps => react.createElement(Dedupe, {
-	  type: "articleFragment"
-	}, react.createElement("div", null, react.createElement("h1", getDragProps(), id), react.createElement(Indent, null, groups.map((child, i) => react.createElement("div", {
-	  key: child.id
-	}, children(child)))))));
-
 	const DropZone = props => react.createElement("div", _extends({}, props, {
 	  style: {
 	    border: '2px dashed blue',
@@ -6781,58 +6878,15 @@
 	  }
 	}));
 
-	const Children$1 = (_ref) => {
-	  let {
-	    children,
-	    childArray
-	  } = _ref,
-	      props = _objectWithoutProperties(_ref, ["children", "childArray"]);
-
-	  return react.createElement(Children, props, getDropProps => react.createElement(Indent, null, childArray.map((child, i) => react.createElement(react.Fragment, {
-	    key: child.id
-	  }, react.createElement(DropZone, getDropProps(i)), react.createElement("div", null, children(child, i)))), react.createElement(DropZone, getDropProps(childArray.length))));
-	};
-
-	const Group = ({
-	  id,
-	  index,
-	  articleFragments,
-	  children
-	}) => react.createElement(Field, {
-	  type: "group",
-	  value: id,
-	  index: index
-	}, react.createElement("div", null, react.createElement("h1", null, id), react.createElement(Children$1, {
-	  childrenKey: "articleFragments",
-	  type: "articleFragment",
-	  childArray: articleFragments
-	}, children)));
-
-	const ArticleFragment = ({
-	  id,
-	  index,
-	  meta,
-	  children
-	}) => react.createElement(Node$1, {
-	  type: "articleFragment",
-	  id: id,
-	  index: index
-	}, getDragProps => react.createElement("div", null, react.createElement("h1", getDragProps(), id), react.createElement(Children$1, {
-	  childrenKey: "meta.supporting",
-	  type: "articleFragment",
-	  childArray: meta.supporting
-	}, children)));
-
-	const Supporting = ({
-	  id,
-	  index
-	}) => react.createElement(Node$1, {
-	  type: "articleFragment",
-	  id: id,
-	  index: index
-	}, getDragProps => react.createElement("div", null, react.createElement("h1", getDragProps(), id)));
+	const Indent = props => react.createElement("div", _extends({}, props, {
+	  style: {
+	    marginLeft: '10px'
+	  }
+	}));
 
 	const json = (fn = a => a) => str => fn(JSON.parse(str));
+
+	const renderDrop = props => react.createElement(DropZone, props);
 
 	const App = ({
 	  front
@@ -6851,42 +6905,93 @@
 	    id: 9
 	  }
 	}, "Article 9 (is not a dupe)"), react.createElement(Root, {
+	  id: front.id,
+	  type: "front",
 	  onChange: change => console.log(change),
+	  onError: error => console.log(error),
 	  dropMappers: {
 	    json: json()
 	  }
-	}, react.createElement(Front, front, (collection, i) => react.createElement(Collection, _extends({}, collection, {
-	  index: i
-	}), (group, j) => react.createElement(Group, _extends({}, group, {
-	  index: j
-	}), (articleFragment, k) => react.createElement(ArticleFragment, _extends({}, articleFragment, {
-	  index: k
-	}), (supporting, l) => react.createElement(Supporting, _extends({}, supporting, {
-	  index: l
-	}))))))));
+	}, react.createElement(Level, {
+	  arr: front.collections,
+	  type: "collection",
+	  renderDrop: renderDrop,
+	  dedupeType: "articleFragment"
+	}, ({
+	  id,
+	  groups
+	}) => react.createElement("div", null, react.createElement("h1", null, id), react.createElement(Indent, null, groups.map(({
+	  id,
+	  articleFragments
+	}) => react.createElement(Field, {
+	  type: "group",
+	  value: id
+	}, react.createElement("div", null, react.createElement("h1", null, id), react.createElement(Indent, null, react.createElement(Level, {
+	  arr: articleFragments,
+	  type: "articleFragment",
+	  renderDrop: renderDrop
+	}, ({
+	  id,
+	  meta: {
+	    supporting
+	  }
+	}, afDragProps) => react.createElement("div", null, react.createElement("h1", afDragProps(), id), react.createElement(Indent, null, react.createElement(Level, {
+	  arr: supporting,
+	  type: "articleFragment",
+	  renderDrop: renderDrop
+	}, ({
+	  id
+	}, sDragProps) => react.createElement("div", null, react.createElement("h1", sDragProps(), id)))))))))))))));
 
 	const front = {
+	  id: '1',
+	  title: 'Front',
 	  collections: [{
-	    id: 1,
+	    id: '1',
 	    title: 'Coll 1',
 	    groups: [{
 	      id: 'big',
 	      articleFragments: [{
-	        id: 1,
+	        id: '1',
 	        title: 'Af 1',
 	        meta: {
 	          supporting: [{
-	            id: 2,
+	            id: '2',
 	            title: 'Af 2'
+	          }]
+	        }
+	      }, {
+	        id: '5',
+	        title: 'Af 5',
+	        meta: {
+	          supporting: [{
+	            id: '6',
+	            title: 'Af 6'
+	          }]
+	        }
+	      }]
+	    }, {
+	      id: 'medium',
+	      articleFragments: [{
+	        id: '3',
+	        title: 'Af 3',
+	        meta: {
+	          supporting: [{
+	            id: '4',
+	            title: 'Af 4'
 	          }]
 	        }
 	      }]
 	    }]
 	  }]
 	};
-	reactDom.render(react.createElement(App, {
-	  front: front
-	}), document.getElementById('root'));
+	const root = document.getElementById('root');
+
+	if (root) {
+	  reactDom.render(react.createElement(App, {
+	    front: front
+	  }), root);
+	}
 
 }());
 //# sourceMappingURL=index.js.map

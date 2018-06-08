@@ -21,7 +21,6 @@ type RootProps = {
   dropMappers: {
     [string]: (data: string) => InsertData | string
   },
-  dedupeType?: string | string[],
   children: ReactNode
 };
 
@@ -85,7 +84,10 @@ class Root extends React.Component<RootProps> {
 
     const data = this.getDropData(e);
 
+    console.log(data);
+
     if (typeof data === 'string') {
+      this.props.onError(data);
       return;
     }
 
@@ -114,6 +116,8 @@ class Root extends React.Component<RootProps> {
 
     const changedFields = getChangedFields(dragFields, fields);
 
+    console.log(dragPath, path, hasMoved(dragPath, path));
+
     const edits = [
       hasMoved(dragPath, path)
         ? move(type, id, dragPath, movePath, index)
@@ -140,6 +144,8 @@ class Root extends React.Component<RootProps> {
 
     const duplicate = getDuplicate(dragType, id);
 
+    console.log(duplicate);
+
     if (duplicate) {
       this.handleMove(duplicate, path, fields);
     } else {
@@ -153,7 +159,7 @@ class Root extends React.Component<RootProps> {
   }
 
   render() {
-    const { type, id, dedupeType, children } = this.props;
+    const { type, id, children } = this.props;
     return (
       <PathContext.Consumer>
         {({ ...pathContext }) => (
@@ -164,7 +170,7 @@ class Root extends React.Component<RootProps> {
                 handleDrop: this.handleDrop
               }}
             >
-              <Node type={type} id={id} index={0} dedupeType={dedupeType}>
+              <Node type={type} id={id} index={0}>
                 {children}
               </Node>
             </RootContext.Provider>

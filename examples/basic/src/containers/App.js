@@ -1,15 +1,46 @@
+// @flow
+
 import React from 'react';
-import * as Guration from '../../../../src';
+import { Root, Level, Field } from '../../../../src';
 import DragZone from '../components/DragZone';
-import Front from './Front';
-import Collection from './Collection';
-import Group from './Group';
-import ArticleFragment from './ArticleFragment';
-import Supporting from './Supporting';
+import DropZone from '../components/DropZone';
+import Indent from '../components/Indent';
 
 const json = (fn = a => a) => str => fn(JSON.parse(str));
 
-const App = ({ front }) => (
+const renderDrop = props => <DropZone {...props} />;
+
+type Base = {
+  id: string,
+  title: string
+};
+
+type Supporting = Base;
+
+type ArticleFragment = Base & {
+  meta: {
+    supporting: Supporting[]
+  }
+};
+
+type Group = {
+  id: string,
+  articleFragments: ArticleFragment[]
+};
+
+type Collection = Base & {
+  groups: Group[]
+};
+
+type Front = Base & {
+  collections: Collection[]
+};
+
+type AppProps = {
+  front: Front
+};
+
+const App = ({ front }: AppProps) => (
   <div>
     <DragZone type="json" json data={{ type: 'articleFragment', id: 1 }}>
       Article 1 (is a dupe)
@@ -17,30 +48,63 @@ const App = ({ front }) => (
     <DragZone type="json" json data={{ type: 'articleFragment', id: 9 }}>
       Article 9 (is not a dupe)
     </DragZone>
-    <Guration.Root
+    <Root
+      id={front.id}
+      type="front"
       onChange={change => console.log(change)}
+      onError={error => console.log(error)}
       dropMappers={{
         json: json()
       }}
     >
-      <Front {...front}>
-        {(collection, i) => (
-          <Collection {...collection} index={i}>
-            {(group, j) => (
-              <Group {...group} index={j}>
-                {(articleFragment, k) => (
-                  <ArticleFragment {...articleFragment} index={k}>
-                    {(supporting, l) => (
-                      <Supporting {...supporting} index={l} />
-                    )}
-                  </ArticleFragment>
-                )}
-              </Group>
-            )}
-          </Collection>
+      <Level
+        arr={front.collections}
+        type="collection"
+        renderDrop={renderDrop}
+        dedupeType="articleFragment"
+      >
+        {({ id, groups }) => (
+          <div>
+            <h1>{id}</h1>
+            <Indent>
+              {groups.map(({ id, articleFragments }) => (
+                <Field type="group" value={id}>
+                  <div>
+                    <h1>{id}</h1>
+                    <Indent>
+                      <Level
+                        arr={articleFragments}
+                        type="articleFragment"
+                        renderDrop={renderDrop}
+                      >
+                        {({ id, meta: { supporting } }, afDragProps) => (
+                          <div>
+                            <h1 {...afDragProps()}>{id}</h1>
+                            <Indent>
+                              <Level
+                                arr={supporting}
+                                type="articleFragment"
+                                renderDrop={renderDrop}
+                              >
+                                {({ id }, sDragProps) => (
+                                  <div>
+                                    <h1 {...sDragProps()}>{id}</h1>
+                                  </div>
+                                )}
+                              </Level>
+                            </Indent>
+                          </div>
+                        )}
+                      </Level>
+                    </Indent>
+                  </div>
+                </Field>
+              ))}
+            </Indent>
+          </div>
         )}
-      </Front>
-    </Guration.Root>
+      </Level>
+    </Root>
   </div>
 );
 

@@ -1,7 +1,7 @@
 // @flow
 
 type Path = {
-  childrenKey?: string,
+  childrenField?: string,
   type: string,
   id: string,
   index: number
