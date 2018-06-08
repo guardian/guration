@@ -18,6 +18,21 @@ const isSubPath = (path: Path[], candidate: Path[]): boolean =>
     );
   });
 
+const isSibling = (path: Path[], candidate: Path[]): boolean =>
+  candidate.length === path.length &&
+  !path.some((el, i) => {
+    const { index: i1, type: t1, childrenField: c1 } = el;
+    const { index: i2, type: t2, childrenField: c2 } = candidate[i];
+
+    // we're still a sub path if the we're on the last and it doesn't have a
+    // childrenField
+    return (
+      (!isNaN(i1) && i1 !== i2) ||
+      (t1 && t1 !== t2) ||
+      (i === path.length - 1 ? c1 === c2 : c1 !== c2)
+    );
+  });
+
 const pathForMove = (source: Path[], target: Path[]): Path[] => {
   const newPath = [];
 
@@ -66,4 +81,4 @@ const hasMoved = (prevPath: Path[], nextPath: Path[]) => {
   return false;
 };
 
-export { isSubPath, pathForMove, hasMoved };
+export { isSubPath, isSibling, pathForMove, hasMoved };

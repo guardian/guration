@@ -3,9 +3,11 @@
 import React, { type Node as ReactNode } from 'react';
 import { RootContext, PathContext, DedupeContext } from './Context';
 import { type Path } from './types/Path';
+import { type ChildCountSpec } from './types/Children';
 
 type GetDropProps = (
-  i: number
+  i: number,
+  childInfo: ChildCountSpec
 ) => {
   onDragOver: (e: DragEvent) => void,
   onDrop: (e: DragEvent) => void
@@ -45,7 +47,7 @@ class Children extends React.Component<ChildrenPropsWithContext> {
     ];
   }
 
-  getDropProps = i => {
+  getDropProps = (i: number, childInfo: ?ChildCountSpec) => {
     const { type, handleDrop, path, fields, getDuplicate } = this.props;
 
     return {
@@ -53,7 +55,8 @@ class Children extends React.Component<ChildrenPropsWithContext> {
       onDrop: handleDrop(
         [...this.path, { type, index: i, id: '@@DROP' }],
         fields,
-        getDuplicate
+        getDuplicate,
+        childInfo
       )
     };
   };

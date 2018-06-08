@@ -4,10 +4,11 @@ import React, { type Node as ReactNode } from 'react';
 import { RootContext, PathContext } from './Context';
 import Node from './Node';
 import { move, insert, update } from './Edits';
-import { isSubPath, pathForMove, hasMoved } from './utils/PathUtils';
+import { isSubPath, isSibling, pathForMove, hasMoved } from './utils/PathUtils';
 import { getChangedFields, hasFields } from './utils/FieldUtils';
 import { type Path } from './types/Path';
 import { type InsertData, type MoveData } from './types/Data';
+import { type ChildCountSpec } from './types/Children';
 import { type Edit } from './Edits';
 import { type GetDuplicate } from './Dedupe';
 
@@ -65,9 +66,12 @@ class Root extends React.Component<RootProps> {
     return dropMappers[type](dataTransfer.getData(type));
   }
 
-  handleDrop = (path: Path[], fields: Object, getDuplicate: GetDuplicate) => (
-    e: DragEvent
-  ) => {
+  handleDrop = (
+    path: Path[],
+    fields: Object,
+    getDuplicate: GetDuplicate,
+    childInfo: ?ChildCountSpec
+  ) => (e: DragEvent) => {
     const { dataTransfer } = e;
 
     if (!dataTransfer) {
@@ -78,13 +82,18 @@ class Root extends React.Component<RootProps> {
 
     if (moveDataStr) {
       const moveData: MoveData = JSON.parse(moveDataStr);
-      this.handleMove(moveData, path, fields);
+      this.handleMove(moveData, path, fields, childInfo);
+      return;
+    }
+
+    if (childInfo && childInfo.childrenCount >= childInfo.maxChildren) {
+      this.props.onError(
+        'Cannot drop, too many children and have not implemented replace logic'
+      );
       return;
     }
 
     const data = this.getDropData(e);
-
-    console.log(data);
 
     if (typeof data === 'string') {
       this.props.onError(data);
@@ -94,7 +103,12 @@ class Root extends React.Component<RootProps> {
     this.handleInsert(data, path, fields, getDuplicate);
   };
 
-  handleMove(dragData: MoveData, path: Path[], fields: Object) {
+  handleMove(
+    dragData: MoveData,
+    path: Path[],
+    fields: Object,
+    childInfo: ?ChildCountSpec
+  ) {
     const { path: dragPath, fields: dragFields } = dragData;
 
     const { type: dragType, id } = dragPath[dragPath.length - 1];
@@ -110,13 +124,22 @@ class Root extends React.Component<RootProps> {
       return;
     }
 
+    if (
+      isSibling(dragPath, path) &&
+      childInfo &&
+      childInfo.childrenCount >= childInfo.maxChildren
+    ) {
+      this.props.onError(
+        'Cannot drop, too many children and have not implemented replace logic'
+      );
+      return;
+    }
+
     const movePath = pathForMove(dragPath, path);
 
     const { index } = movePath[movePath.length - 1];
 
     const changedFields = getChangedFields(dragFields, fields);
-
-    console.log(dragPath, path, hasMoved(dragPath, path));
 
     const edits = [
       hasMoved(dragPath, path)
@@ -143,8 +166,6 @@ class Root extends React.Component<RootProps> {
     }
 
     const duplicate = getDuplicate(dragType, id);
-
-    console.log(duplicate);
 
     if (duplicate) {
       this.handleMove(duplicate, path, fields);

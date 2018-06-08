@@ -76,6 +76,7 @@ const App = ({ front }: AppProps) => (
                         arr={articleFragments}
                         type="articleFragment"
                         renderDrop={renderDrop}
+                        maxChildren={2}
                       >
                         {({ id, meta: { supporting } }, afDragProps) => (
                           <div>

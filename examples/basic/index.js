@@ -6302,7 +6302,7 @@
 
 	const RootContext = react.createContext({
 	  handleDragStart: (path, fields, type) => e => {},
-	  handleDrop: (path, fields, getDuplicate) => e => {}
+	  handleDrop: (path, fields, getDuplicate, childInfo) => e => {}
 	});
 	const PathContext = react.createContext({
 	  path: [],
@@ -6494,6 +6494,22 @@
 	  return !isNaN(i1) && i1 !== i2 || t1 && t1 !== t2 || c1 !== c2 && i !== path.length - 1;
 	});
 
+	const isSibling = (path, candidate) => candidate.length === path.length && !path.some((el, i) => {
+	  const {
+	    index: i1,
+	    type: t1,
+	    childrenField: c1
+	  } = el;
+	  const {
+	    index: i2,
+	    type: t2,
+	    childrenField: c2
+	  } = candidate[i]; // we're still a sub path if the we're on the last and it doesn't have a
+	  // childrenField
+
+	  return !isNaN(i1) && i1 !== i2 || t1 && t1 !== t2 || (i === path.length - 1 ? c1 === c2 : c1 !== c2);
+	});
+
 	const pathForMove = (source, target) => {
 	  const newPath = [];
 
@@ -6583,7 +6599,7 @@
 	        fields,
 	        type
 	      }));
-	    }), _defineProperty(this, "handleDrop", (path, fields, getDuplicate) => e => {
+	    }), _defineProperty(this, "handleDrop", (path, fields, getDuplicate, childInfo) => e => {
 	      const {
 	        dataTransfer
 	      } = e;
@@ -6596,12 +6612,16 @@
 
 	      if (moveDataStr) {
 	        const moveData = JSON.parse(moveDataStr);
-	        this.handleMove(moveData, path, fields);
+	        this.handleMove(moveData, path, fields, childInfo);
+	        return;
+	      }
+
+	      if (childInfo && childInfo.childrenCount >= childInfo.maxChildren) {
+	        this.props.onError('Cannot drop, too many children and have not implemented replace logic');
 	        return;
 	      }
 
 	      const data = this.getDropData(e);
-	      console.log(data);
 
 	      if (typeof data === 'string') {
 	        this.props.onError(data);
@@ -6633,7 +6653,7 @@
 	    return dropMappers[type](dataTransfer.getData(type));
 	  }
 
-	  handleMove(dragData, path, fields) {
+	  handleMove(dragData, path, fields, childInfo) {
 	    const {
 	      path: dragPath,
 	      fields: dragFields
@@ -6656,12 +6676,16 @@
 	      return;
 	    }
 
+	    if (isSibling(dragPath, path) && childInfo && childInfo.childrenCount >= childInfo.maxChildren) {
+	      this.props.onError('Cannot drop, too many children and have not implemented replace logic');
+	      return;
+	    }
+
 	    const movePath = pathForMove(dragPath, path);
 	    const {
 	      index
 	    } = movePath[movePath.length - 1];
 	    const changedFields = getChangedFields(dragFields, fields);
-	    console.log(dragPath, path, hasMoved(dragPath, path));
 	    const edits = [hasMoved(dragPath, path) ? move(type, id, dragPath, movePath, index) : null, hasFields(changedFields) ? update(type, id, changedFields) : null].filter(Boolean);
 
 	    if (edits.length) {
@@ -6684,7 +6708,6 @@
 	    }
 
 	    const duplicate = getDuplicate(dragType, id);
-	    console.log(duplicate);
 
 	    if (duplicate) {
 	      this.handleMove(duplicate, path, fields);
@@ -6748,7 +6771,7 @@
 	  constructor(...args) {
 	    var _temp;
 
-	    return _temp = super(...args), _defineProperty(this, "getDropProps", i => {
+	    return _temp = super(...args), _defineProperty(this, "getDropProps", (i, childInfo) => {
 	      const {
 	        type,
 	        handleDrop,
@@ -6762,7 +6785,7 @@
 	          type,
 	          index: i,
 	          id: '@@DROP'
-	        }], fields, getDuplicate)
+	        }], fields, getDuplicate, childInfo)
 	      };
 	    }), _temp;
 	  }
@@ -6832,10 +6855,13 @@
 	  arr,
 	  type,
 	  key = `${type}s`,
-	  getKey,
+	  getKey = ({
+	    id
+	  }) => id,
 	  getDedupeKey = getKey,
 	  dedupeType,
 	  renderDrop,
+	  maxChildren = Infinity,
 	  children
 	}) => {
 	  const {
@@ -6847,17 +6873,17 @@
 	    key: key
 	  }, getDropProps => react.createElement(Wrapper, props, arr.map((child, i) => react.createElement(react.Fragment, {
 	    key: getKey(child)
-	  }, renderDrop(getDropProps(i)), react.createElement(Node$1, {
+	  }, renderDrop(getDropProps(i, {
+	    childrenCount: arr.length,
+	    maxChildren
+	  })), react.createElement(Node$1, {
 	    id: getKey(child),
 	    dedupeKey: getDedupeKey(child),
 	    index: i
-	  }, getDragProps => children(child, getDragProps)))), renderDrop(getDropProps(arr.length))));
-	};
-
-	Level.defaultProps = {
-	  getKey: ({
-	    id
-	  }) => id
+	  }, getDragProps => children(child, getDragProps)))), renderDrop(getDropProps(arr.length, {
+	    childrenCount: arr.length,
+	    maxChildren
+	  }))));
 	};
 
 	const DragZone = ({
@@ -6929,7 +6955,8 @@
 	}, react.createElement("div", null, react.createElement("h1", null, id), react.createElement(Indent, null, react.createElement(Level, {
 	  arr: articleFragments,
 	  type: "articleFragment",
-	  renderDrop: renderDrop
+	  renderDrop: renderDrop,
+	  maxChildren: 2
 	}, ({
 	  id,
 	  meta: {
