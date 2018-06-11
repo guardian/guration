@@ -7,4 +7,4 @@ export { default as Children } from './Children';
 export { default as Level } from './Level';
 export { default as Dedupe } from './Dedupe';
 export type { Edit, Move, Insert, Update } from './Edits';
-export type { DragProps, DropProps } from './types/Props';
+export type { GetDragProps, GetDropProps } from './types/Props';
