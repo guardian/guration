@@ -5,17 +5,24 @@ import { PathContext } from './Context';
 
 type FieldProps = {
   type: string,
+  field: string,
   value: string | number | boolean,
   children: ReactNode
 };
 
-const Field = ({ type, value, children }: FieldProps) => (
+const Field = ({ type, field, value, children }: FieldProps) => (
   <PathContext.Consumer>
     {({ fields, ...pathContext }) => (
       <PathContext.Provider
         value={{
           ...pathContext,
-          fields: { ...fields, [type]: value }
+          fields: {
+            ...fields,
+            [type]: {
+              ...(fields[type] || {}),
+              [field]: value
+            }
+          }
         }}
       >
         {children}

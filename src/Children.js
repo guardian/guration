@@ -47,7 +47,7 @@ class Children extends React.Component<ChildrenPropsWithContext> {
       onDragOver: e => e.preventDefault(),
       onDrop: handleDrop(
         [...this.path, { type, index: i, id: '@@DROP' }],
-        fields,
+        fields[type] || {},
         getDuplicate,
         childInfo
       )

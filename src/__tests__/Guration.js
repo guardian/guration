@@ -257,7 +257,7 @@ describe('Guration', () => {
 
     TestRenderer.create(
       <Root type="@@ROOT" id="@@ROOT" onChange={e => (edit = e)}>
-        <Field type="b" value={1}>
+        <Field type="a" field="b" value={1}>
           <Children field="children1" type="a">
             <Node type="a" id={2} index={0}>
               {getDragProps => {
@@ -266,7 +266,7 @@ describe('Guration', () => {
             </Node>
           </Children>
         </Field>
-        <Field type="b" value={2}>
+        <Field type="a" field="b" value={2}>
           <Children field="children2" type="a">
             {getDropProps => {
               dropProps = getDropProps(0);
@@ -298,7 +298,7 @@ describe('Guration', () => {
     TestRenderer.create(
       <Root type="@@ROOT" id="@@ROOT" onChange={e => (edit = e)}>
         <Children type="a">
-          <Field type="f" value={0}>
+          <Field type="a" field="f" value={0}>
             <Node type="a" id="1" index={0}>
               {getDragProps => {
                 dragProps = getDragProps();

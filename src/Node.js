@@ -63,7 +63,11 @@ class Node extends React.Component<NodePropsWithContext> {
             {typeof children === 'function'
               ? children(() => ({
                   draggable: true,
-                  onDragStart: handleDragStart(this.path, fields, type)
+                  onDragStart: handleDragStart(
+                    this.path,
+                    fields[type] || {},
+                    type
+                  )
                 }))
               : children}
           </PathContext.Provider>
