@@ -1,6 +1,5 @@
 // @flow
 
-import { type $Return } from './types/Utils';
 import { type Path } from './types/Path';
 
 type Move = {|
