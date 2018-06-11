@@ -4,13 +4,9 @@ import React, { type Node as ReactNode } from 'react';
 import { RootContext, PathContext, DedupeContext } from './Context';
 import Dedupe from './Dedupe';
 import { type Path } from './types/Path';
+import { type GetDragProps } from './types/Props';
 
-type GetDropProps = () => {
-  draggable: true,
-  onDragStart: (e: DragEvent) => void
-};
-
-type ChildFunc = (getDropProps: GetDropProps) => ReactNode;
+type ChildFunc = (getDropProps: GetDragProps) => ReactNode;
 
 type NodeProps = {
   children: ChildFunc | ReactNode,

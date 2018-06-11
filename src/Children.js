@@ -3,15 +3,8 @@
 import React, { type Node as ReactNode } from 'react';
 import { RootContext, PathContext, DedupeContext } from './Context';
 import { type Path } from './types/Path';
+import { type GetDropProps } from './types/Props';
 import { type ChildCountSpec } from './types/Children';
-
-type GetDropProps = (
-  i: number,
-  childInfo: ChildCountSpec
-) => {
-  onDragOver: (e: DragEvent) => void,
-  onDrop: (e: DragEvent) => void
-};
 
 type ChildFunc = (getDropProps: GetDropProps) => ReactNode;
 
