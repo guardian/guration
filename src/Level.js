@@ -24,6 +24,7 @@ type LevelProps<T> = {
   dedupeType?: *,
   renderDrop?: (dropProps: DropProps) => ReactNode,
   maxChildren?: number,
+  offset?: number,
   children: (child: T, getDragProps: () => DragProps) => ReactNode
 };
 
