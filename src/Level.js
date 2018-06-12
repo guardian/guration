@@ -44,6 +44,7 @@ const Level = <T: *>({
   dedupeType,
   renderDrop,
   maxChildren = Infinity,
+  offset = 0,
   children
 }: LevelProps<T>) => {
   const { Wrapper, props } = getDedupeWrapperAndProps(dedupeType);
@@ -55,19 +56,19 @@ const Level = <T: *>({
           {arr.map((child, i) => (
             <React.Fragment key={getKey(child)}>
               {renderDrop && renderDrop(
-                getDropProps(i, { childrenCount: arr.length, maxChildren })
+                getDropProps(offset + i, { childrenCount: arr.length, maxChildren })
               )}
               <Node
                 id={getKey(child)}
                 dedupeKey={getDedupeKey(child)}
-                index={i}
+                index={offset + i}
               >
                 {getDragProps => children(child, getDragProps)}
               </Node>
             </React.Fragment>
           ))}
           {renderDrop && renderDrop(
-            getDropProps(arr.length, { childrenCount: arr.length, maxChildren })
+            getDropProps(offset + arr.length, { childrenCount: arr.length, maxChildren })
           )}
         </Wrapper>
       )}

@@ -63,44 +63,58 @@ const App = ({ front }: AppProps) => (
         renderDrop={renderDrop}
         dedupeType="articleFragment"
       >
-        {({ id, groups }) => (
+        {({ title, groups }) => (
           <div>
-            <h1>{id}</h1>
+            <h1>{title}</h1>
             <Indent>
-              {groups.map(({ id, articleFragments }) => (
-                <Field type="group" value={id}>
-                  <div>
-                    <h1>{id}</h1>
-                    <Indent>
-                      <Level
-                        arr={articleFragments}
-                        type="articleFragment"
-                        renderDrop={renderDrop}
-                        maxChildren={2}
-                      >
-                        {({ id, meta: { supporting } }, afDragProps) => (
-                          <div>
-                            <h1 {...afDragProps()}>{id}</h1>
-                            <Indent>
-                              <Level
-                                arr={supporting}
-                                type="articleFragment"
-                                renderDrop={renderDrop}
-                              >
-                                {({ id }, sDragProps) => (
-                                  <div>
-                                    <h1 {...sDragProps()}>{id}</h1>
-                                  </div>
-                                )}
-                              </Level>
-                            </Indent>
-                          </div>
-                        )}
-                      </Level>
-                    </Indent>
-                  </div>
-                </Field>
-              ))}
+              {groups
+                .reduce(
+                  (acc, group, i) => [
+                    ...acc,
+                    [
+                      group,
+                      acc[i - 1]
+                        ? acc[i - 1][1] + acc[i - 1][0].articleFragments.length
+                        : 0
+                    ]
+                  ],
+                  []
+                )
+                .map(([{ id, articleFragments }, offset]) => (
+                  <Field type="articleFragment" field="group" value={id}>
+                    <div>
+                      <h1>{id}</h1>
+                      <Indent>
+                        <Level
+                          arr={articleFragments}
+                          offset={offset}
+                          type="articleFragment"
+                          renderDrop={renderDrop}
+                          maxChildren={2}
+                        >
+                          {({ title, meta: { supporting } }, afDragProps) => (
+                            <div>
+                              <h1 {...afDragProps()}>{title}</h1>
+                              <Indent>
+                                <Level
+                                  arr={supporting}
+                                  type="articleFragment"
+                                  renderDrop={renderDrop}
+                                >
+                                  {({ title }, sDragProps) => (
+                                    <div>
+                                      <h1 {...sDragProps()}>{title}</h1>
+                                    </div>
+                                  )}
+                                </Level>
+                              </Indent>
+                            </div>
+                          )}
+                        </Level>
+                      </Indent>
+                    </div>
+                  </Field>
+                ))}
             </Indent>
           </div>
         )}

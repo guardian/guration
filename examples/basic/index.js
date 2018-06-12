@@ -6398,7 +6398,7 @@
 	        }
 	      }, typeof children === 'function' ? children(() => ({
 	        draggable: true,
-	        onDragStart: handleDragStart(this.path, fields, type)
+	        onDragStart: handleDragStart(this.path, fields[type] || {}, type)
 	      })) : children));
 	    }), _temp;
 	  }
@@ -6750,6 +6750,7 @@
 
 	const Field = ({
 	  type,
+	  field,
 	  value,
 	  children
 	}) => react.createElement(PathContext.Consumer, null, (_ref) => {
@@ -6761,7 +6762,9 @@
 	  return react.createElement(PathContext.Provider, {
 	    value: _objectSpread({}, pathContext, {
 	      fields: _objectSpread({}, fields, {
-	        [type]: value
+	        [type]: _objectSpread({}, fields[type] || {}, {
+	          [field]: value
+	        })
 	      })
 	    })
 	  }, children);
@@ -6785,7 +6788,7 @@
 	          type,
 	          index: i,
 	          id: '@@DROP'
-	        }], fields, getDuplicate, childInfo)
+	        }], fields[type] || {}, getDuplicate, childInfo)
 	      };
 	    }), _temp;
 	  }
@@ -6862,6 +6865,7 @@
 	  dedupeType,
 	  renderDrop,
 	  maxChildren = Infinity,
+	  offset = 0,
 	  children
 	}) => {
 	  const {
@@ -6873,14 +6877,14 @@
 	    key: key
 	  }, getDropProps => react.createElement(Wrapper, props, arr.map((child, i) => react.createElement(react.Fragment, {
 	    key: getKey(child)
-	  }, renderDrop && renderDrop(getDropProps(i, {
+	  }, renderDrop && renderDrop(getDropProps(offset + i, {
 	    childrenCount: arr.length,
 	    maxChildren
 	  })), react.createElement(Node$1, {
 	    id: getKey(child),
 	    dedupeKey: getDedupeKey(child),
-	    index: i
-	  }, getDragProps => children(child, getDragProps)))), renderDrop && renderDrop(getDropProps(arr.length, {
+	    index: offset + i
+	  }, getDragProps => children(child, getDragProps)))), renderDrop && renderDrop(getDropProps(offset + arr.length, {
 	    childrenCount: arr.length,
 	    maxChildren
 	  }))));
@@ -6906,7 +6910,7 @@
 
 	const Indent = props => react.createElement("div", _extends({}, props, {
 	  style: {
-	    marginLeft: '10px'
+	    marginLeft: '50px'
 	  }
 	}));
 
@@ -6944,31 +6948,33 @@
 	  renderDrop: renderDrop,
 	  dedupeType: "articleFragment"
 	}, ({
-	  id,
+	  title,
 	  groups
-	}) => react.createElement("div", null, react.createElement("h1", null, id), react.createElement(Indent, null, groups.map(({
+	}) => react.createElement("div", null, react.createElement("h1", null, title), react.createElement(Indent, null, groups.reduce((acc, group, i) => [...acc, [group, acc[i - 1] ? acc[i - 1][1] + acc[i - 1][0].articleFragments.length : 0]], []).map(([{
 	  id,
 	  articleFragments
-	}) => react.createElement(Field, {
-	  type: "group",
+	}, offset]) => react.createElement(Field, {
+	  type: "articleFragment",
+	  field: "group",
 	  value: id
 	}, react.createElement("div", null, react.createElement("h1", null, id), react.createElement(Indent, null, react.createElement(Level, {
 	  arr: articleFragments,
+	  offset: offset,
 	  type: "articleFragment",
 	  renderDrop: renderDrop,
 	  maxChildren: 2
 	}, ({
-	  id,
+	  title,
 	  meta: {
 	    supporting
 	  }
-	}, afDragProps) => react.createElement("div", null, react.createElement("h1", afDragProps(), id), react.createElement(Indent, null, react.createElement(Level, {
+	}, afDragProps) => react.createElement("div", null, react.createElement("h1", afDragProps(), title), react.createElement(Indent, null, react.createElement(Level, {
 	  arr: supporting,
 	  type: "articleFragment",
 	  renderDrop: renderDrop
 	}, ({
-	  id
-	}, sDragProps) => react.createElement("div", null, react.createElement("h1", sDragProps(), id)))))))))))))));
+	  title
+	}, sDragProps) => react.createElement("div", null, react.createElement("h1", sDragProps(), title)))))))))))))));
 
 	const front = {
 	  id: '1',
