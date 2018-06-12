@@ -10,7 +10,7 @@
   "scripts": {
     "build": "rollup -c",
     "build-examples": "rollup -c examples/rollup.config.js",
-    "prepublishOnly": "yarn jest && yarn build",
+    "prepublishOnly": "flow && jest && yarn build",
     "test": "jest",
     "examples": "yarn build-examples && http-server ./examples"
   },
