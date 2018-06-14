@@ -1,5 +1,5 @@
 {
-  "name": "guration",
+  "name": "@guardian/guration",
   "version": "0.0.18",
   "main": "dist/index.js",
   "dependencies": {
