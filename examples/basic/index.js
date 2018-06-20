@@ -6274,9 +6274,37 @@
 	  return target;
 	}
 
+	function _objectWithoutProperties(source, excluded) {
+	  if (source == null) return {};
+	  var target = {};
+	  var sourceKeys = Object.keys(source);
+	  var key, i;
+
+	  for (i = 0; i < sourceKeys.length; i++) {
+	    key = sourceKeys[i];
+	    if (excluded.indexOf(key) >= 0) continue;
+	    target[key] = source[key];
+	  }
+
+	  if (Object.getOwnPropertySymbols) {
+	    var sourceSymbolKeys = Object.getOwnPropertySymbols(source);
+
+	    for (i = 0; i < sourceSymbolKeys.length; i++) {
+	      key = sourceSymbolKeys[i];
+	      if (excluded.indexOf(key) >= 0) continue;
+	      if (!Object.prototype.propertyIsEnumerable.call(source, key)) continue;
+	      target[key] = source[key];
+	    }
+	  }
+
+	  return target;
+	}
+
 	const RootContext = react.createContext({
 	  handleDragStart: (path, type) => e => {},
-	  handleDrop: (path, getDuplicate, childInfo) => e => {}
+	  handleDragOver: (path, getIndexOffset) => e => {},
+	  handleDrop: (path, getDuplicate, childInfo, getIndexOffset) => e => {},
+	  dropPath: null
 	});
 	const PathContext = react.createContext({
 	  path: [],
@@ -6340,7 +6368,24 @@
 	  constructor(...args) {
 	    var _temp;
 
-	    return _temp = super(...args), _defineProperty(this, "deregister", () => {}), _defineProperty(this, "reregister", () => {
+	    return _temp = super(...args), _defineProperty(this, "el", void 0), _defineProperty(this, "getIndexOffset", ({
+	      clientY
+	    }) => {
+	      const {
+	        el
+	      } = this; // this should never happen!
+
+	      if (!el) {
+	        return 0;
+	      }
+
+	      const {
+	        top,
+	        height
+	      } = el.getBoundingClientRect();
+	      const offsetY = clientY - top;
+	      return offsetY > height / 2 ? 1 : 0;
+	    }), _defineProperty(this, "deregister", () => {}), _defineProperty(this, "reregister", () => {
 	      const {
 	        register,
 	        deregister,
@@ -6354,12 +6399,16 @@
 	    }), _defineProperty(this, "componentDidMount", () => this.reregister()), _defineProperty(this, "componentDidUpdate", () => this.reregister()), _defineProperty(this, "componentWillUnmount", () => this.deregister()), _defineProperty(this, "render", () => {
 	      const {
 	        children,
+	        getDuplicate,
+	        getDropProps,
 	        type,
 	        id,
 	        index
 	      } = this.props;
 	      return react.createElement(RootContext.Consumer, null, ({
-	        handleDragStart
+	        handleDragStart,
+	        handleDragOver,
+	        handleDrop
 	      }) => react.createElement(PathContext.Provider, {
 	        value: {
 	          path: this.path,
@@ -6368,7 +6417,11 @@
 	      }, typeof children === 'function' ? children(() => ({
 	        draggable: true,
 	        onDragStart: handleDragStart(this.path, type)
-	      })) : children));
+	      }), getDropProps ? _objectSpread({}, getDropProps(this.getIndexOffset), {
+	        ref: node => {
+	          this.el = node;
+	        }
+	      }) : {}) : children));
 	    }), _temp;
 	  }
 
@@ -6401,11 +6454,13 @@
 	  type
 	}) => react.createElement(DedupeContext.Consumer, null, ({
 	  register,
-	  deregister
+	  deregister,
+	  getDuplicate
 	}) => react.createElement(Node, _extends({}, props, {
 	  type: type,
 	  register: register,
 	  deregister: deregister,
+	  getDuplicate: getDuplicate,
 	  path: path
 	})))));
 
@@ -6436,21 +6491,25 @@
 	  }
 	});
 
-	const isSubPath = (path, candidate) => candidate.length > path.length && !!path.length && !path.some((el, i) => {
+	const elEq = (a, b, checkChildren = false) => {
 	  const {
 	    index: i1,
 	    type: t1,
 	    childrenField: c1
-	  } = el;
+	  } = a;
 	  const {
 	    index: i2,
 	    type: t2,
 	    childrenField: c2
-	  } = candidate[i]; // we're still a sub path if the we're on the last and it doesn't have a
+	  } = b; // we're still a sub path if the we're on the last and it doesn't have a
 	  // childrenField
 
-	  return !isNaN(i1) && i1 !== i2 || t1 && t1 !== t2 || c1 !== c2 && i !== path.length - 1;
-	});
+	  return !isNaN(i1) && i1 === i2 && t1 && t1 === t2 && (c1 === c2 || !checkChildren);
+	};
+
+	const eq = (a, b) => a.length === b.length && a.every((el, i) => elEq(el, b[i], i !== a.length - 1));
+
+	const isSubPath = (path, candidate) => candidate.length > path.length && !!path.length && path.every((el, i) => elEq(el, candidate[i], i !== path.length - 1));
 
 	const isSibling = (path, candidate) => candidate.length === path.length && !path.some((el, i) => {
 	  const {
@@ -6537,11 +6596,20 @@
 
 	const INTERNAL_TRANSFER_TYPE = '@@TRANSFER';
 
+	const updatePath = (candidatePath, offset) => {
+	  const parent = candidatePath[candidatePath.length - 1];
+	  return [...candidatePath.slice(0, candidatePath.length - 1), _objectSpread({}, parent, {
+	    index: parent.index + offset
+	  })];
+	};
+
 	class Root extends react.Component {
 	  constructor(...args) {
 	    var _temp;
 
-	    return _temp = super(...args), _defineProperty(this, "handleDragStart", (path, type) => e => {
+	    return _temp = super(...args), _defineProperty(this, "handled", false), _defineProperty(this, "state", {
+	      dropPath: null
+	    }), _defineProperty(this, "handleDragStart", (path, type) => e => {
 	      if (!e.dataTransfer) {
 	        return;
 	      }
@@ -6550,7 +6618,24 @@
 	        path,
 	        type
 	      }));
-	    }), _defineProperty(this, "handleDrop", (path, getDuplicate, childInfo) => e => {
+	    }), _defineProperty(this, "handleDragOver", (candidatePath, getIndexOffset) => e => {
+	      if (this.handled) {
+	        return;
+	      }
+
+	      this.handled = true;
+	      e.preventDefault();
+	      const indexOffset = getIndexOffset ? getIndexOffset(e) : 0;
+	      const path = updatePath(candidatePath, indexOffset);
+	      this.setState({
+	        dropPath: path
+	      });
+	    }), _defineProperty(this, "handleDrop", (candidatePath, getDuplicate, childInfo, getIndexOffset) => e => {
+	      if (this.handled) {
+	        return;
+	      }
+
+	      this.handled = true;
 	      const {
 	        dataTransfer
 	      } = e;
@@ -6559,6 +6644,8 @@
 	        return;
 	      }
 
+	      const indexOffset = getIndexOffset ? getIndexOffset(e) : 0;
+	      const path = updatePath(candidatePath, indexOffset);
 	      const moveDataStr = dataTransfer.getData(INTERNAL_TRANSFER_TYPE);
 
 	      if (moveDataStr) {
@@ -6671,7 +6758,25 @@
 	      id,
 	      children
 	    } = this.props;
-	    return react.createElement(PathContext.Consumer, null, (_ref) => {
+	    return react.createElement("div", {
+	      onDrop: () => {
+	        this.handled = false;
+	      },
+	      onDragOver: () => {
+	        if (!this.handled) {
+	          this.setState({
+	            dropPath: null
+	          });
+	        }
+
+	        this.handled = false;
+	      },
+	      onDragEnd: () => {
+	        this.setState({
+	          dropPath: null
+	        });
+	      }
+	    }, react.createElement(PathContext.Consumer, null, (_ref) => {
 	      let pathContext = _extends({}, _ref);
 
 	      return react.createElement(PathContext.Provider, {
@@ -6681,14 +6786,16 @@
 	      }, react.createElement(RootContext.Provider, {
 	        value: {
 	          handleDragStart: this.handleDragStart,
-	          handleDrop: this.handleDrop
+	          handleDrop: this.handleDrop,
+	          handleDragOver: this.handleDragOver,
+	          dropPath: this.state.dropPath
 	        }
 	      }, react.createElement(Node$1, {
 	        type: type,
 	        id: id,
 	        index: 0
 	      }, children)));
-	    });
+	    }));
 	  }
 
 	}
@@ -6701,20 +6808,17 @@
 	  constructor(...args) {
 	    var _temp;
 
-	    return _temp = super(...args), _defineProperty(this, "getDropProps", (i, childInfo) => {
+	    return _temp = super(...args), _defineProperty(this, "getDropProps", (i, childInfo, getOffsetIndex) => {
 	      const {
 	        type,
+	        handleDragOver,
 	        handleDrop,
 	        path,
 	        getDuplicate
 	      } = this.props;
 	      return {
-	        onDragOver: e => e.preventDefault(),
-	        onDrop: handleDrop([...this.path, {
-	          type,
-	          index: i,
-	          id: '@@DROP'
-	        }], getDuplicate, childInfo)
+	        onDragOver: handleDragOver(this.getDropPath(i), getOffsetIndex),
+	        onDrop: handleDrop(this.getDropPath(i), getDuplicate, childInfo)
 	      };
 	    }), _temp;
 	  }
@@ -6736,32 +6840,48 @@
 	    })];
 	  }
 
+	  getDropPath(i) {
+	    const {
+	      type
+	    } = this.props;
+	    return [...this.path, {
+	      type,
+	      index: i,
+	      id: '@@DROP'
+	    }];
+	  }
+
 	  render() {
 	    const {
 	      path
 	    } = this;
 	    const {
 	      type,
-	      children
+	      children,
+	      dropPath
 	    } = this.props;
 	    return react.createElement(PathContext.Provider, {
 	      value: {
 	        path,
 	        type
 	      }
-	    }, typeof children === 'function' ? children(this.getDropProps) : children);
+	    }, typeof children === 'function' ? children(this.getDropProps, i => !!dropPath && eq(dropPath, this.getDropPath(i))) : children);
 	  }
 
 	}
 
 	var Children$1 = (props => react.createElement(RootContext.Consumer, null, ({
-	  handleDrop
+	  handleDrop,
+	  handleDragOver,
+	  dropPath
 	}) => react.createElement(PathContext.Consumer, null, ({
 	  path
 	}) => react.createElement(DedupeContext.Consumer, null, ({
 	  getDuplicate
 	}) => react.createElement(Children, _extends({}, props, {
+	  handleDragOver: handleDragOver,
 	  handleDrop: handleDrop,
+	  dropPath: dropPath,
 	  path: path,
 	  getDuplicate: getDuplicate
 	}))))));
@@ -6796,19 +6916,23 @@
 	  return react.createElement(Children$1, {
 	    type: type,
 	    field: field
-	  }, getDropProps => react.createElement(Wrapper, props, arr.map((child, i) => react.createElement(react.Fragment, {
+	  }, (getDropProps, isTarget) => react.createElement(Wrapper, props, arr.map((child, i) => react.createElement(react.Fragment, {
 	    key: getKey(child)
 	  }, renderDrop && renderDrop(getDropProps(i, {
 	    childrenCount: arr.length,
 	    maxChildren
-	  }), i), react.createElement(Node$1, {
+	  }), isTarget(i), i), react.createElement(Node$1, {
 	    id: getKey(child),
 	    dedupeKey: getDedupeKey(child),
+	    getDropProps: getIndexOffset => getDropProps(i, {
+	      childrenCount: arr.length,
+	      maxChildren
+	    }, getIndexOffset),
 	    index: i
-	  }, getDragProps => children(child, getDragProps, i)))), renderDrop && renderDrop(getDropProps(arr.length, {
+	  }, (getDragProps, dropProps) => children(child, getDragProps, dropProps, i)))), renderDrop && renderDrop(getDropProps(arr.length, {
 	    childrenCount: arr.length,
 	    maxChildren
-	  }), arr.length)));
+	  }), isTarget(arr.length), arr.length)));
 	};
 
 	const DragZone = ({
@@ -6821,23 +6945,34 @@
 	  onDragStart: e => e.dataTransfer.setData(type, json ? JSON.stringify(data) : data)
 	}, children);
 
-	const DropZone = props => react.createElement("div", _extends({}, props, {
-	  style: {
-	    border: '2px dashed blue',
-	    height: '20px',
-	    margin: '10px 0'
-	  }
-	}));
+	const DropZone = (_ref) => {
+	  let {
+	    isOver
+	  } = _ref,
+	      props = _objectWithoutProperties(_ref, ["isOver"]);
+
+	  return react.createElement("div", _extends({}, props, {
+	    style: {
+	      border: '2px dashed blue',
+	      height: '20px',
+	      backgroundColor: isOver ? 'white' : 'transparent'
+	    }
+	  }));
+	};
 
 	const Indent = props => react.createElement("div", _extends({}, props, {
 	  style: {
-	    marginLeft: '50px'
+	    marginLeft: '50px',
+	    padding: 10,
+	    border: '1px solid white'
 	  }
 	}));
 
 	const json = (fn = a => a) => str => fn(JSON.parse(str));
 
-	const renderDrop = props => react.createElement(DropZone, props);
+	const renderDrop = (props, isTarget) => react.createElement(DropZone, _extends({}, props, {
+	  isOver: isTarget
+	}));
 
 	const App = ({
 	  front
@@ -6888,13 +7023,21 @@
 	  meta: {
 	    supporting
 	  }
-	}, afDragProps) => react.createElement("div", null, react.createElement("h1", afDragProps(), title), react.createElement(Indent, null, react.createElement(Level, {
+	}, afDragProps, afDropProps) => react.createElement("div", _extends({}, afDropProps, {
+	  style: {
+	    padding: 10
+	  }
+	}), react.createElement("h1", afDragProps(), title), react.createElement(Indent, null, react.createElement(Level, {
 	  arr: supporting,
 	  type: "articleFragment",
 	  renderDrop: renderDrop
 	}, ({
 	  title
-	}, sDragProps) => react.createElement("div", null, react.createElement("h1", sDragProps(), title))))))))))))));
+	}, sDragProps, sDropProps) => react.createElement("div", _extends({}, sDropProps, {
+	  style: {
+	    padding: 10
+	  }
+	}), react.createElement("h1", sDragProps(), title))))))))))))));
 
 	const front = {
 	  id: '1',

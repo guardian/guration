@@ -8,11 +8,16 @@ import { type GetDuplicate } from './Dedupe';
 
 const RootContext = React.createContext({
   handleDragStart: (path: Path[], type: string) => (e: DragEvent) => {},
+  handleDragOver: (path: Path[], getIndexOffset: ?(e: DragEvent) => number) => (
+    e: DragEvent
+  ) => {},
   handleDrop: (
     path: Path[],
     getDuplicate: GetDuplicate,
-    childInfo: ?ChildCountSpec
-  ) => (e: DragEvent) => {}
+    childInfo: ?ChildCountSpec,
+    getIndexOffset: ?(e: DragEvent) => number
+  ) => (e: DragEvent) => {},
+  dropPath: (null: ?(Path[]))
 });
 const PathContext = React.createContext({
   path: [],

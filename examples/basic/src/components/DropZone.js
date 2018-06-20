@@ -1,9 +1,13 @@
 import React from 'react';
 
-const DropZone = props => (
+const DropZone = ({ isOver, ...props }) => (
   <div
     {...props}
-    style={{ border: '2px dashed blue', height: '20px', margin: '10px 0' }}
+    style={{
+      border: '2px dashed blue',
+      height: '20px',
+      backgroundColor: isOver ? 'white' : 'transparent'
+    }}
   />
 );
 

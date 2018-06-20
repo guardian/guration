@@ -8,7 +8,9 @@ import Indent from '../components/Indent';
 
 const json = (fn = a => a) => str => fn(JSON.parse(str));
 
-const renderDrop = props => <DropZone {...props} />;
+const renderDrop = (props, isTarget) => (
+  <DropZone {...props} isOver={isTarget} />
+);
 
 type Base = {
   id: string,
@@ -78,8 +80,12 @@ const App = ({ front }: AppProps) => (
                         renderDrop={renderDrop}
                         maxChildren={2}
                       >
-                        {({ title, meta: { supporting } }, afDragProps) => (
-                          <div>
+                        {(
+                          { title, meta: { supporting } },
+                          afDragProps,
+                          afDropProps
+                        ) => (
+                          <div {...afDropProps} style={{ padding: 10 }}>
                             <h1 {...afDragProps()}>{title}</h1>
                             <Indent>
                               <Level
@@ -87,8 +93,8 @@ const App = ({ front }: AppProps) => (
                                 type="articleFragment"
                                 renderDrop={renderDrop}
                               >
-                                {({ title }, sDragProps) => (
-                                  <div>
+                                {({ title }, sDragProps, sDropProps) => (
+                                  <div {...sDropProps} style={{ padding: 10 }}>
                                     <h1 {...sDragProps()}>{title}</h1>
                                   </div>
                                 )}

@@ -4,12 +4,12 @@ import React, { type Node as ReactNode } from 'react';
 import { RootContext, PathContext, DedupeContext } from './Context';
 import Dedupe from './Dedupe';
 import { type Path } from './types/Path';
-import { type GetDragProps } from './types/Props';
 
-type ChildFunc = (getDropProps: GetDragProps) => ReactNode;
+type ChildFunc = (getDragProps: () => Object, dropProps: Object) => ReactNode;
 
 type NodeProps = {
   children: ChildFunc | ReactNode,
+  getDropProps?: ((e: DragEvent) => number) => Object,
   id: string,
   dedupeKey?: string,
   index: number
@@ -18,16 +18,14 @@ type NodeProps = {
 type NodePropsWithContext = NodeProps & {
   type: string,
   path: Path[],
-  register: (
-    type: string,
-    id: string,
-    path: Path[],
-    index: number
-  ) => void,
-  deregister: (type: string, id: string) => void
+  register: *,
+  deregister: *,
+  getDuplicate: *
 };
 
 class Node extends React.Component<NodePropsWithContext> {
+  el: ?HTMLElement;
+
   get path() {
     const { path, type, id, index } = this.props;
     return [...path, { type, id, index }];
@@ -37,6 +35,20 @@ class Node extends React.Component<NodePropsWithContext> {
     const { id, dedupeKey } = this.props;
     return dedupeKey || id;
   }
+
+  getIndexOffset = ({ clientY }: DragEvent) => {
+    const { el } = this;
+
+    // this should never happen!
+    if (!el) {
+      return 0;
+    }
+
+    const { top, height } = el.getBoundingClientRect();
+    const offsetY = clientY - top;
+
+    return offsetY > height / 2 ? 1 : 0;
+  };
 
   deregister = () => {};
 
@@ -52,20 +64,34 @@ class Node extends React.Component<NodePropsWithContext> {
   componentWillUnmount = () => this.deregister();
 
   render = () => {
-    const { children, type, id, index } = this.props;
+    const {
+      children,
+      getDuplicate,
+      getDropProps,
+      type,
+      id,
+      index
+    } = this.props;
 
     return (
       <RootContext.Consumer>
-        {({ handleDragStart }) => (
+        {({ handleDragStart, handleDragOver, handleDrop }) => (
           <PathContext.Provider value={{ path: this.path, type }}>
             {typeof children === 'function'
-              ? children(() => ({
-                  draggable: true,
-                  onDragStart: handleDragStart(
-                    this.path,
-                    type
-                  )
-                }))
+              ? children(
+                  () => ({
+                    draggable: true,
+                    onDragStart: handleDragStart(this.path, type)
+                  }),
+                  getDropProps
+                    ? {
+                        ...getDropProps(this.getIndexOffset),
+                        ref: node => {
+                          this.el = node;
+                        }
+                      }
+                    : {}
+                )
               : children}
           </PathContext.Provider>
         )}
@@ -78,12 +104,13 @@ export default (props: NodeProps) => (
   <PathContext.Consumer>
     {({ path, type }) => (
       <DedupeContext.Consumer>
-        {({ register, deregister }) => (
+        {({ register, deregister, getDuplicate }) => (
           <Node
             {...props}
             type={type}
             register={register}
             deregister={deregister}
+            getDuplicate={getDuplicate}
             path={path}
           />
         )}

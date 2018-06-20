@@ -2,11 +2,18 @@
 
 import React, { type Node as ReactNode } from 'react';
 import { RootContext, PathContext, DedupeContext } from './Context';
+import { eq } from './utils/PathUtils';
 import { type Path } from './types/Path';
-import { type GetDropProps } from './types/Props';
 import { type ChildCountSpec } from './types/Children';
 
-type ChildFunc = (getDropProps: GetDropProps) => ReactNode;
+type ChildFunc = (
+  getDropProps: (
+    i: number,
+    childInfo: ChildCountSpec,
+    getIndexOffset: ?(e: DragEvent) => number
+  ) => Object,
+  isTarget: (index: number) => boolean
+) => ReactNode;
 
 type ChildrenProps = {
   field?: string,
@@ -15,7 +22,9 @@ type ChildrenProps = {
 };
 
 type ChildrenPropsWithContext = ChildrenProps & {
+  handleDragOver: *,
   handleDrop: *,
+  dropPath: ?(Path[]),
   path: Path[],
   getDuplicate: *
 };
@@ -39,22 +48,23 @@ class Children extends React.Component<ChildrenPropsWithContext> {
     ];
   }
 
-  getDropProps = (i: number, childInfo: ?ChildCountSpec) => {
-    const { type, handleDrop, path, getDuplicate } = this.props;
+  getDropPath(i) {
+    const { type } = this.props;
+    return [...this.path, { type, index: i, id: '@@DROP' }];
+  }
+
+  getDropProps = (i: number, childInfo: ?ChildCountSpec, getOffsetIndex: *) => {
+    const { type, handleDragOver, handleDrop, path, getDuplicate } = this.props;
 
     return {
-      onDragOver: e => e.preventDefault(),
-      onDrop: handleDrop(
-        [...this.path, { type, index: i, id: '@@DROP' }],
-        getDuplicate,
-        childInfo
-      )
+      onDragOver: handleDragOver(this.getDropPath(i), getOffsetIndex),
+      onDrop: handleDrop(this.getDropPath(i), getDuplicate, childInfo)
     };
   };
 
   render() {
     const { path } = this;
-    const { type, children } = this.props;
+    const { type, children, dropPath } = this.props;
 
     return (
       <PathContext.Provider
@@ -64,7 +74,10 @@ class Children extends React.Component<ChildrenPropsWithContext> {
         }}
       >
         {typeof children === 'function'
-          ? children(this.getDropProps)
+          ? children(
+              this.getDropProps,
+              (i: number) => !!dropPath && eq(dropPath, this.getDropPath(i))
+            )
           : children}
       </PathContext.Provider>
     );
@@ -73,14 +86,16 @@ class Children extends React.Component<ChildrenPropsWithContext> {
 
 export default (props: ChildrenProps) => (
   <RootContext.Consumer>
-    {({ handleDrop }) => (
+    {({ handleDrop, handleDragOver, dropPath }) => (
       <PathContext.Consumer>
         {({ path }) => (
           <DedupeContext.Consumer>
             {({ getDuplicate }) => (
               <Children
                 {...props}
+                handleDragOver={handleDragOver}
                 handleDrop={handleDrop}
+                dropPath={dropPath}
                 path={path}
                 getDuplicate={getDuplicate}
               />

@@ -24,7 +24,28 @@ type RootProps = {
   children: ReactNode
 };
 
-class Root extends React.Component<RootProps> {
+type RootState = {
+  dropPath: ?(Path[])
+};
+
+const updatePath = (candidatePath, offset) => {
+  const parent = candidatePath[candidatePath.length - 1];
+  return [
+    ...candidatePath.slice(0, candidatePath.length - 1),
+    {
+      ...parent,
+      index: parent.index + offset
+    }
+  ];
+};
+
+class Root extends React.Component<RootProps, RootState> {
+  handled = false;
+
+  state = {
+    dropPath: null
+  };
+
   static defaultProps = {
     onError: () => {}
   };
@@ -62,16 +83,41 @@ class Root extends React.Component<RootProps> {
     return dropMappers[type](dataTransfer.getData(type));
   }
 
-  handleDrop = (
-    path: Path[],
-    getDuplicate: GetDuplicate,
-    childInfo: ?ChildCountSpec
+  handleDragOver = (
+    candidatePath: Path[],
+    getIndexOffset: ?(e: DragEvent) => number
   ) => (e: DragEvent) => {
+    if (this.handled) {
+      return;
+    }
+    this.handled = true;
+    e.preventDefault();
+    const indexOffset = getIndexOffset ? getIndexOffset(e) : 0;
+    const path = updatePath(candidatePath, indexOffset);
+    this.setState({
+      dropPath: path
+    });
+  };
+
+  handleDrop = (
+    candidatePath: Path[],
+    getDuplicate: GetDuplicate,
+    childInfo: ?ChildCountSpec,
+    getIndexOffset: ?(e: DragEvent) => number
+  ) => (e: DragEvent) => {
+    if (this.handled) {
+      return;
+    }
+    this.handled = true;
+
     const { dataTransfer } = e;
 
     if (!dataTransfer) {
       return;
     }
+
+    const indexOffset = getIndexOffset ? getIndexOffset(e) : 0;
+    const path = updatePath(candidatePath, indexOffset);
 
     const moveDataStr = dataTransfer.getData(INTERNAL_TRANSFER_TYPE);
 
@@ -163,22 +209,43 @@ class Root extends React.Component<RootProps> {
   render() {
     const { type, id, children } = this.props;
     return (
-      <PathContext.Consumer>
-        {({ ...pathContext }) => (
-          <PathContext.Provider value={{ ...pathContext, type }}>
-            <RootContext.Provider
-              value={{
-                handleDragStart: this.handleDragStart,
-                handleDrop: this.handleDrop
-              }}
-            >
-              <Node type={type} id={id} index={0}>
-                {children}
-              </Node>
-            </RootContext.Provider>
-          </PathContext.Provider>
-        )}
-      </PathContext.Consumer>
+      <div
+        onDrop={() => {
+          this.handled = false;
+        }}
+        onDragOver={() => {
+          if (!this.handled) {
+            this.setState({
+              dropPath: null
+            });
+          }
+          this.handled = false;
+        }}
+        onDragEnd={() => {
+          this.setState({
+            dropPath: null
+          });
+        }}
+      >
+        <PathContext.Consumer>
+          {({ ...pathContext }) => (
+            <PathContext.Provider value={{ ...pathContext, type }}>
+              <RootContext.Provider
+                value={{
+                  handleDragStart: this.handleDragStart,
+                  handleDrop: this.handleDrop,
+                  handleDragOver: this.handleDragOver,
+                  dropPath: this.state.dropPath
+                }}
+              >
+                <Node type={type} id={id} index={0}>
+                  {children}
+                </Node>
+              </RootContext.Provider>
+            </PathContext.Provider>
+          )}
+        </PathContext.Consumer>
+      </div>
     );
   }
 }

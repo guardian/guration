@@ -22,9 +22,18 @@ type LevelProps<T> = {
   getKey?: (child: T) => string,
   getDedupeKey?: (child: T) => string,
   dedupeType?: *,
-  renderDrop?: (dropProps: DropProps, i: number) => ReactNode,
+  renderDrop?: (
+    dropProps: DropProps,
+    isTarget: boolean,
+    i: number
+  ) => ReactNode,
   maxChildren?: number,
-  children: (child: T, getDragProps: () => DragProps, i: number) => ReactNode
+  children: (
+    child: T,
+    getDragProps: () => DragProps,
+    dropProps: DropProps,
+    i: number
+  ) => ReactNode
 };
 
 const getDedupeWrapperAndProps = (dedupeType: *) =>
@@ -50,21 +59,31 @@ const Level = <T: *>({
 
   return (
     <Children type={type} field={field}>
-      {getDropProps => (
+      {(getDropProps, isTarget) => (
         <Wrapper {...props}>
           {arr.map((child, i) => (
             <React.Fragment key={getKey(child)}>
               {renderDrop &&
                 renderDrop(
                   getDropProps(i, { childrenCount: arr.length, maxChildren }),
+                  isTarget(i),
                   i
                 )}
               <Node
                 id={getKey(child)}
                 dedupeKey={getDedupeKey(child)}
+                getDropProps={getIndexOffset =>
+                  getDropProps(
+                    i,
+                    { childrenCount: arr.length, maxChildren },
+                    getIndexOffset
+                  )
+                }
                 index={i}
               >
-                {getDragProps => children(child, getDragProps, i)}
+                {(getDragProps, dropProps) =>
+                  children(child, getDragProps, dropProps, i)
+                }
               </Node>
             </React.Fragment>
           ))}
@@ -74,6 +93,7 @@ const Level = <T: *>({
                 childrenCount: arr.length,
                 maxChildren
               }),
+              isTarget(arr.length),
               arr.length
             )}
         </Wrapper>
