@@ -1,6 +1,6 @@
 import React from 'react';
 import TestRenderer from 'react-test-renderer';
-import { Root, Node, Children, Level, Dedupe } from '../index';
+import { Root, Level } from '../index';
 
 class DataTransfer {
   data = {};
@@ -41,20 +41,28 @@ describe('Guration', () => {
 
     TestRenderer.create(
       <Root type="@@ROOT" id="@@ROOT" onChange={e => (edit = e)}>
-        <Children type="a">
-          <Node type="a" id="1" index={0}>
-            {getDragProps => {
+        <Level arr={[{ id: 1 }, { id: 2 }]} type="a">
+          {(child, getDragProps, i) => {
+            if (i === 0) {
               dragProps = getDragProps();
-            }}
-          </Node>
-          <Node type="a" id="2" index={1}>
-            <Children field="children" type="a">
-              {getDropProps => {
-                dropProps = getDropProps(1);
-              }}
-            </Children>
-          </Node>
-        </Children>
+            }
+
+            return (
+              <Level
+                arr={[{ id: 1 }, { id: 2 }]}
+                field="children"
+                type="a"
+                renderDrop={(_dropProps, i) => {
+                  if (i === 1) {
+                    dropProps = _dropProps;
+                  }
+                }}
+              >
+                {() => {}}
+              </Level>
+            );
+          }}
+        </Level>
       </Root>
     );
 
@@ -76,15 +84,20 @@ describe('Guration', () => {
           text: str => JSON.parse(str)
         }}
       >
-        <Children type="a">
-          <Node type="a" id={2} index={0}>
-            <Children field="children" type="a">
-              {getDropProps => {
-                dropProps = getDropProps(1);
+        <Level arr={[{ id: 2 }]} type="a">
+          {() => (
+            <Level
+              arr={[{ id: 1 }]}
+              type="a"
+              field="children"
+              renderDrop={_dropProps => {
+                dropProps = _dropProps;
               }}
-            </Children>
-          </Node>
-        </Children>
+            >
+              {() => {}}
+            </Level>
+          )}
+        </Level>
       </Root>
     );
 
@@ -124,40 +137,44 @@ describe('Guration', () => {
           text: str => JSON.parse(str)
         }}
       >
-        <Dedupe type="a">
-          <Children field="children1" type="a">
-            <Node type="a" id={3} index={0}>
-              <Children field="children2" type="a">
-                {getDropProps => {
-                  dropProps = getDropProps(0);
-                }}
-              </Children>
-            </Node>
-            <Node type="a" id={2} index={1} />
-          </Children>
-        </Dedupe>
+        <Level arr={[{ id: 3 }]} dedupeType="a" field="children1" type="a">
+          {() => (
+            <Level
+              arr={[{ id: 2 }, { id: 3 }, { id: 4 }]}
+              field="children2"
+              type="a"
+              renderDrop={(_dropProps, i) => {
+                if (i === 1) {
+                  dropProps = _dropProps;
+                }
+              }}
+            >
+              {() => {}}
+            </Level>
+          )}
+        </Level>
       </Root>
     );
 
     runDrag('text', {
       type: 'a',
-      id: 2
+      id: 4
     })(dropProps);
 
     expect(edit[0]).toEqual({
       payload: {
         from: {
           parent: {
-            childrenField: 'children1',
-            id: '@@ROOT',
+            childrenField: 'children2',
+            id: 3,
             index: 0,
-            type: '@@ROOT'
+            type: 'a'
           }
         },
-        id: 2,
+        id: 4,
         to: {
           parent: { id: 3, index: 0, type: 'a', childrenField: 'children2' },
-          index: 0
+          index: 1
         },
         type: 'a'
       },
@@ -172,20 +189,23 @@ describe('Guration', () => {
 
     TestRenderer.create(
       <Root type="@@ROOT" id="@@ROOT" onError={e => (error = e)}>
-        <Children field="children" type="a">
-          <Node type="a" id={2} index={0}>
-            {getDragProps => {
-              dragProps = getDragProps();
-              return (
-                <Children field="children" type="a">
-                  {getDropProps => {
-                    dropProps = getDropProps(1);
-                  }}
-                </Children>
-              );
-            }}
-          </Node>
-        </Children>
+        <Level arr={[{ id: 2 }]} type="a" field="children">
+          {(child, getDragProps) => {
+            dragProps = getDragProps();
+            return (
+              <Level
+                arr={[]}
+                field="children"
+                type="a"
+                renderDrop={_dropProps => {
+                  dropProps = _dropProps;
+                }}
+              >
+                {() => {}}
+              </Level>
+            );
+          }}
+        </Level>
       </Root>
     );
 
@@ -201,18 +221,21 @@ describe('Guration', () => {
 
     TestRenderer.create(
       <Root type="@@ROOT" id="@@ROOT" onError={e => (error = e)}>
-        <Children field="children" type="a">
-          <Node type="a" id={2} index={0}>
-            {getDragProps => {
-              dragProps = getDragProps();
-            }}
-          </Node>
-        </Children>
-        <Children field="other" type="b">
-          {getDropProps => {
-            dropProps = getDropProps(1);
+        <Level arr={[{ id: 2 }]} field="children" type="a">
+          {(child, getDragProps) => {
+            dragProps = getDragProps();
           }}
-        </Children>
+        </Level>
+        <Level
+          arr={[]}
+          field="other"
+          type="b"
+          renderDrop={_dropProps => {
+            dropProps = _dropProps;
+          }}
+        >
+          {() => {}}
+        </Level>
       </Root>
     );
 
@@ -228,20 +251,21 @@ describe('Guration', () => {
 
     TestRenderer.create(
       <Root type="@@ROOT" id="@@ROOT" onChange={e => (edit = e)}>
-        <Node type="b" id={1} index={0}>
-          <Children field="children" type="a">
-            {getDropProps => {
-              dropProps = getDropProps(3);
-              return (
-                <Node type="a" id={2} index={0}>
-                  {getDragProps => {
-                    dragProps = getDragProps();
-                  }}
-                </Node>
-              );
-            }}
-          </Children>
-        </Node>
+        <Level
+          type="b"
+          arr={[{ id: 1 }, { id: 2 }, { id: 3 }]}
+          renderDrop={_dropProps => {
+            dropProps = _dropProps;
+          }}
+        >
+          {(child, getDragProps, i) => {
+            if (i === 0) {
+              dragProps = getDragProps();
+            }
+
+            return false;
+          }}
+        </Level>
       </Root>
     );
 
@@ -257,19 +281,18 @@ describe('Guration', () => {
 
     TestRenderer.create(
       <Root type="@@ROOT" id="@@ROOT" onChange={e => (edit = e)}>
-        <Children field="children" type="a">
-          {getDropProps => {
-            dropProps = getDropProps(1);
-
-            return (
-              <Node type="a" id="1" index={0}>
-                {getDragProps => {
-                  dragProps = getDragProps();
-                }}
-              </Node>
-            );
+        <Level
+          arr={[{ id: '1' }]}
+          field="children"
+          type="a"
+          renderDrop={_dropProps => {
+            dropProps = _dropProps;
           }}
-        </Children>
+        >
+          {(child, getDragProps) => {
+            dragProps = getDragProps();
+          }}
+        </Level>
       </Root>
     );
 

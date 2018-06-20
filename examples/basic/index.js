@@ -6779,7 +6779,7 @@
 	const Level = ({
 	  arr,
 	  type,
-	  key = `${type}s`,
+	  field = `${type}s`,
 	  getKey = ({
 	    id
 	  }) => id,
@@ -6795,20 +6795,20 @@
 	  } = getDedupeWrapperAndProps(dedupeType);
 	  return react.createElement(Children$1, {
 	    type: type,
-	    key: key
+	    field: field
 	  }, getDropProps => react.createElement(Wrapper, props, arr.map((child, i) => react.createElement(react.Fragment, {
 	    key: getKey(child)
 	  }, renderDrop && renderDrop(getDropProps(i, {
 	    childrenCount: arr.length,
 	    maxChildren
-	  })), react.createElement(Node$1, {
+	  }), i), react.createElement(Node$1, {
 	    id: getKey(child),
 	    dedupeKey: getDedupeKey(child),
 	    index: i
-	  }, getDragProps => children(child, getDragProps)))), renderDrop && renderDrop(getDropProps(arr.length, {
+	  }, getDragProps => children(child, getDragProps, i)))), renderDrop && renderDrop(getDropProps(arr.length, {
 	    childrenCount: arr.length,
 	    maxChildren
-	  }))));
+	  }), arr.length)));
 	};
 
 	const DragZone = ({
