@@ -26,13 +26,7 @@ class Dedupe extends React.Component<DedupeProps> {
     return Array.isArray(type) ? type : [type];
   }
 
-  register = (
-    type: string,
-    key: string,
-    path: Path[],
-    fields: Object,
-    index: number
-  ) => {
+  register = (type: string, key: string, path: Path[], index: number) => {
     if (this.type.indexOf(type) === -1) {
       return;
     }
@@ -45,7 +39,6 @@ class Dedupe extends React.Component<DedupeProps> {
         ...prevOfType,
         [key]: {
           path,
-          fields,
           index
         }
       }

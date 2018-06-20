@@ -17,7 +17,6 @@ type ChildrenProps = {
 type ChildrenPropsWithContext = ChildrenProps & {
   handleDrop: *,
   path: Path[],
-  fields: Object,
   getDuplicate: *
 };
 
@@ -41,13 +40,12 @@ class Children extends React.Component<ChildrenPropsWithContext> {
   }
 
   getDropProps = (i: number, childInfo: ?ChildCountSpec) => {
-    const { type, handleDrop, path, fields, getDuplicate } = this.props;
+    const { type, handleDrop, path, getDuplicate } = this.props;
 
     return {
       onDragOver: e => e.preventDefault(),
       onDrop: handleDrop(
         [...this.path, { type, index: i, id: '@@DROP' }],
-        fields[type] || {},
         getDuplicate,
         childInfo
       )
@@ -56,13 +54,12 @@ class Children extends React.Component<ChildrenPropsWithContext> {
 
   render() {
     const { path } = this;
-    const { type, children, fields } = this.props;
+    const { type, children } = this.props;
 
     return (
       <PathContext.Provider
         value={{
           path,
-          fields,
           type
         }}
       >
@@ -78,14 +75,13 @@ export default (props: ChildrenProps) => (
   <RootContext.Consumer>
     {({ handleDrop }) => (
       <PathContext.Consumer>
-        {({ path, fields }) => (
+        {({ path }) => (
           <DedupeContext.Consumer>
             {({ getDuplicate }) => (
               <Children
                 {...props}
                 handleDrop={handleDrop}
                 path={path}
-                fields={fields}
                 getDuplicate={getDuplicate}
               />
             )}

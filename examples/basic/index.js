@@ -6274,43 +6274,16 @@
 	  return target;
 	}
 
-	function _objectWithoutProperties(source, excluded) {
-	  if (source == null) return {};
-	  var target = {};
-	  var sourceKeys = Object.keys(source);
-	  var key, i;
-
-	  for (i = 0; i < sourceKeys.length; i++) {
-	    key = sourceKeys[i];
-	    if (excluded.indexOf(key) >= 0) continue;
-	    target[key] = source[key];
-	  }
-
-	  if (Object.getOwnPropertySymbols) {
-	    var sourceSymbolKeys = Object.getOwnPropertySymbols(source);
-
-	    for (i = 0; i < sourceSymbolKeys.length; i++) {
-	      key = sourceSymbolKeys[i];
-	      if (excluded.indexOf(key) >= 0) continue;
-	      if (!Object.prototype.propertyIsEnumerable.call(source, key)) continue;
-	      target[key] = source[key];
-	    }
-	  }
-
-	  return target;
-	}
-
 	const RootContext = react.createContext({
-	  handleDragStart: (path, fields, type) => e => {},
-	  handleDrop: (path, fields, getDuplicate, childInfo) => e => {}
+	  handleDragStart: (path, type) => e => {},
+	  handleDrop: (path, getDuplicate, childInfo) => e => {}
 	});
 	const PathContext = react.createContext({
 	  path: [],
-	  fields: {},
 	  type: '@@ROOT'
 	});
 	const DedupeContext = react.createContext({
-	  register: (type, id, path, fields, index) => {},
+	  register: (type, id, path, index) => {},
 	  deregister: (type, id) => {},
 	  getDuplicate: (type, id) => null
 	});
@@ -6319,7 +6292,7 @@
 	  constructor(...args) {
 	    var _temp;
 
-	    return _temp = super(...args), _defineProperty(this, "context", {}), _defineProperty(this, "register", (type, key, path, fields, index) => {
+	    return _temp = super(...args), _defineProperty(this, "context", {}), _defineProperty(this, "register", (type, key, path, index) => {
 	      if (this.type.indexOf(type) === -1) {
 	        return;
 	      }
@@ -6329,7 +6302,6 @@
 	        [type]: _objectSpread({}, prevOfType, {
 	          [key]: {
 	            path,
-	            fields,
 	            index
 	          }
 	        })
@@ -6372,18 +6344,16 @@
 	      const {
 	        register,
 	        deregister,
-	        fields,
 	        type,
 	        index
 	      } = this.props;
 	      this.deregister();
-	      register(type, this.dedupeKey, this.path, fields, index);
+	      register(type, this.dedupeKey, this.path, index);
 
 	      this.deregister = () => deregister(type, this.dedupeKey);
 	    }), _defineProperty(this, "componentDidMount", () => this.reregister()), _defineProperty(this, "componentDidUpdate", () => this.reregister()), _defineProperty(this, "componentWillUnmount", () => this.deregister()), _defineProperty(this, "render", () => {
 	      const {
 	        children,
-	        fields,
 	        type,
 	        id,
 	        index
@@ -6393,12 +6363,11 @@
 	      }) => react.createElement(PathContext.Provider, {
 	        value: {
 	          path: this.path,
-	          fields,
 	          type
 	        }
 	      }, typeof children === 'function' ? children(() => ({
 	        draggable: true,
-	        onDragStart: handleDragStart(this.path, fields[type] || {}, type)
+	        onDragStart: handleDragStart(this.path, type)
 	      })) : children));
 	    }), _temp;
 	  }
@@ -6429,7 +6398,6 @@
 
 	var Node$1 = (props => react.createElement(PathContext.Consumer, null, ({
 	  path,
-	  fields,
 	  type
 	}) => react.createElement(DedupeContext.Consumer, null, ({
 	  register,
@@ -6438,8 +6406,7 @@
 	  type: type,
 	  register: register,
 	  deregister: deregister,
-	  path: path,
-	  fields: fields
+	  path: path
 	})))));
 
 	const move = (type, id, dragPath, path, newIndex) => ({
@@ -6466,15 +6433,6 @@
 	      parent: dragPath[dragPath.length - 2],
 	      index: newIndex
 	    }
-	  }
-	});
-
-	const update = (type, id, fields) => ({
-	  type: 'UPDATE',
-	  payload: {
-	    type,
-	    id,
-	    fields
 	  }
 	});
 
@@ -6577,29 +6535,22 @@
 	  return false;
 	};
 
-	const getChangedFields = (prevFields, nextFields) => Object.entries(_objectSpread({}, prevFields, nextFields)).filter(([key, val]) => val !== prevFields[key]).reduce((acc, [key, val]) => _objectSpread({}, acc, {
-	  [key]: val
-	}), {});
-
-	const hasFields = fields => Object.keys(fields).length !== 0;
-
 	const INTERNAL_TRANSFER_TYPE = '@@TRANSFER';
 
 	class Root extends react.Component {
 	  constructor(...args) {
 	    var _temp;
 
-	    return _temp = super(...args), _defineProperty(this, "handleDragStart", (path, fields, type) => e => {
+	    return _temp = super(...args), _defineProperty(this, "handleDragStart", (path, type) => e => {
 	      if (!e.dataTransfer) {
 	        return;
 	      }
 
 	      e.dataTransfer.setData(INTERNAL_TRANSFER_TYPE, JSON.stringify({
 	        path,
-	        fields,
 	        type
 	      }));
-	    }), _defineProperty(this, "handleDrop", (path, fields, getDuplicate, childInfo) => e => {
+	    }), _defineProperty(this, "handleDrop", (path, getDuplicate, childInfo) => e => {
 	      const {
 	        dataTransfer
 	      } = e;
@@ -6612,7 +6563,7 @@
 
 	      if (moveDataStr) {
 	        const moveData = JSON.parse(moveDataStr);
-	        this.handleMove(moveData, path, fields, childInfo);
+	        this.handleMove(moveData, path, childInfo);
 	        return;
 	      }
 
@@ -6628,7 +6579,7 @@
 	        return;
 	      }
 
-	      this.handleInsert(data, path, fields, getDuplicate);
+	      this.handleInsert(data, path, getDuplicate);
 	    }), _temp;
 	  }
 
@@ -6653,10 +6604,9 @@
 	    return dropMappers[type](dataTransfer.getData(type));
 	  }
 
-	  handleMove(dragData, path, fields, childInfo) {
+	  handleMove(dragData, path, childInfo) {
 	    const {
-	      path: dragPath,
-	      fields: dragFields
+	      path: dragPath
 	    } = dragData;
 	    const {
 	      type: dragType,
@@ -6685,8 +6635,7 @@
 	    const {
 	      index
 	    } = movePath[movePath.length - 1];
-	    const changedFields = getChangedFields(dragFields, fields);
-	    const edits = [hasMoved(dragPath, path) ? move(type, id, dragPath, movePath, index) : null, hasFields(changedFields) ? update(type, id, changedFields) : null].filter(Boolean);
+	    const edits = [hasMoved(dragPath, path) ? move(type, id, dragPath, movePath, index) : null].filter(Boolean);
 
 	    if (edits.length) {
 	      this.props.onChange(edits);
@@ -6696,7 +6645,7 @@
 	  handleInsert({
 	    type: dragType,
 	    id
-	  }, path, fields, getDuplicate) {
+	  }, path, getDuplicate) {
 	    const {
 	      type,
 	      index
@@ -6710,9 +6659,9 @@
 	    const duplicate = getDuplicate(dragType, id);
 
 	    if (duplicate) {
-	      this.handleMove(duplicate, path, fields);
+	      this.handleMove(duplicate, path);
 	    } else {
-	      this.props.onChange([insert(type, id, path, index), hasFields(fields) ? update(type, id, fields) : null].filter(Boolean));
+	      this.props.onChange([insert(type, id, path, index)].filter(Boolean));
 	    }
 	  }
 
@@ -6748,28 +6697,6 @@
 	  onError: () => {}
 	});
 
-	const Field = ({
-	  type,
-	  field,
-	  value,
-	  children
-	}) => react.createElement(PathContext.Consumer, null, (_ref) => {
-	  let {
-	    fields
-	  } = _ref,
-	      pathContext = _objectWithoutProperties(_ref, ["fields"]);
-
-	  return react.createElement(PathContext.Provider, {
-	    value: _objectSpread({}, pathContext, {
-	      fields: _objectSpread({}, fields, {
-	        [type]: _objectSpread({}, fields[type] || {}, {
-	          [field]: value
-	        })
-	      })
-	    })
-	  }, children);
-	});
-
 	class Children extends react.Component {
 	  constructor(...args) {
 	    var _temp;
@@ -6779,7 +6706,6 @@
 	        type,
 	        handleDrop,
 	        path,
-	        fields,
 	        getDuplicate
 	      } = this.props;
 	      return {
@@ -6788,7 +6714,7 @@
 	          type,
 	          index: i,
 	          id: '@@DROP'
-	        }], fields[type] || {}, getDuplicate, childInfo)
+	        }], getDuplicate, childInfo)
 	      };
 	    }), _temp;
 	  }
@@ -6816,13 +6742,11 @@
 	    } = this;
 	    const {
 	      type,
-	      children,
-	      fields
+	      children
 	    } = this.props;
 	    return react.createElement(PathContext.Provider, {
 	      value: {
 	        path,
-	        fields,
 	        type
 	      }
 	    }, typeof children === 'function' ? children(this.getDropProps) : children);
@@ -6833,14 +6757,12 @@
 	var Children$1 = (props => react.createElement(RootContext.Consumer, null, ({
 	  handleDrop
 	}) => react.createElement(PathContext.Consumer, null, ({
-	  path,
-	  fields
+	  path
 	}) => react.createElement(DedupeContext.Consumer, null, ({
 	  getDuplicate
 	}) => react.createElement(Children, _extends({}, props, {
 	  handleDrop: handleDrop,
 	  path: path,
-	  fields: fields,
 	  getDuplicate: getDuplicate
 	}))))));
 
@@ -6865,7 +6787,6 @@
 	  dedupeType,
 	  renderDrop,
 	  maxChildren = Infinity,
-	  offset = 0,
 	  children
 	}) => {
 	  const {
@@ -6877,14 +6798,14 @@
 	    key: key
 	  }, getDropProps => react.createElement(Wrapper, props, arr.map((child, i) => react.createElement(react.Fragment, {
 	    key: getKey(child)
-	  }, renderDrop && renderDrop(getDropProps(offset + i, {
+	  }, renderDrop && renderDrop(getDropProps(i, {
 	    childrenCount: arr.length,
 	    maxChildren
 	  })), react.createElement(Node$1, {
 	    id: getKey(child),
 	    dedupeKey: getDedupeKey(child),
-	    index: offset + i
-	  }, getDragProps => children(child, getDragProps)))), renderDrop && renderDrop(getDropProps(offset + arr.length, {
+	    index: i
+	  }, getDragProps => children(child, getDragProps)))), renderDrop && renderDrop(getDropProps(arr.length, {
 	    childrenCount: arr.length,
 	    maxChildren
 	  }))));
@@ -6950,16 +6871,15 @@
 	}, ({
 	  title,
 	  groups
-	}) => react.createElement("div", null, react.createElement("h1", null, title), react.createElement(Indent, null, groups.reduce((acc, group, i) => [...acc, [group, acc[i - 1] ? acc[i - 1][1] + acc[i - 1][0].articleFragments.length : 0]], []).map(([{
+	}) => react.createElement("div", null, react.createElement("h1", null, title), react.createElement(Indent, null, react.createElement(Level, {
+	  arr: groups,
+	  type: "group",
+	  renderDrop: renderDrop
+	}, ({
 	  id,
 	  articleFragments
-	}, offset]) => react.createElement(Field, {
-	  type: "articleFragment",
-	  field: "group",
-	  value: id
-	}, react.createElement("div", null, react.createElement("h1", null, id), react.createElement(Indent, null, react.createElement(Level, {
+	}) => react.createElement("div", null, react.createElement("h1", null, id), react.createElement(Indent, null, react.createElement(Level, {
 	  arr: articleFragments,
-	  offset: offset,
 	  type: "articleFragment",
 	  renderDrop: renderDrop,
 	  maxChildren: 2
@@ -6974,7 +6894,7 @@
 	  renderDrop: renderDrop
 	}, ({
 	  title
-	}, sDragProps) => react.createElement("div", null, react.createElement("h1", sDragProps(), title)))))))))))))));
+	}, sDragProps) => react.createElement("div", null, react.createElement("h1", sDragProps(), title))))))))))))));
 
 	const front = {
 	  id: '1',

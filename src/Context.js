@@ -7,29 +7,19 @@ import { type ChildCountSpec } from './types/Children';
 import { type GetDuplicate } from './Dedupe';
 
 const RootContext = React.createContext({
-  handleDragStart: (path: Path[], fields: Object, type: string) => (
-    e: DragEvent
-  ) => {},
+  handleDragStart: (path: Path[], type: string) => (e: DragEvent) => {},
   handleDrop: (
     path: Path[],
-    fields: Object,
     getDuplicate: GetDuplicate,
     childInfo: ?ChildCountSpec
   ) => (e: DragEvent) => {}
 });
 const PathContext = React.createContext({
   path: [],
-  fields: {},
   type: '@@ROOT'
 });
 const DedupeContext = React.createContext({
-  register: (
-    type: string,
-    id: string,
-    path: Path[],
-    fields: Object,
-    index: number
-  ) => {},
+  register: (type: string, id: string, path: Path[], index: number) => {},
   deregister: (type: string, id: string) => {},
   getDuplicate: (type: string, id: string): ?MoveData => null
 });

@@ -9,7 +9,6 @@ type InsertData = {
 
 type MoveData = {
   path: Path[],
-  fields: Object,
   index: number
 };
 

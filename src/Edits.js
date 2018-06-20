@@ -29,15 +29,6 @@ type Insert = {|
   |}
 |};
 
-type Update = {|
-  type: 'UPDATE',
-  payload: {|
-    type: string,
-    id: string,
-    fields: Object
-  |}
-|};
-
 const move = (
   type: string,
   id: string,
@@ -76,16 +67,7 @@ const insert = (
   }
 });
 
-const update = (type: string, id: string, fields: Object): Update => ({
-  type: 'UPDATE',
-  payload: {
-    type,
-    id,
-    fields
-  }
-});
+type Edit = Move | Insert;
 
-type Edit = Move | Insert | Update;
-
-export { move, insert, update };
-export type { Edit, Move, Insert, Update };
+export { move, insert };
+export type { Edit, Move, Insert };

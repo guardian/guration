@@ -3,9 +3,8 @@
 import React, { type Node as ReactNode } from 'react';
 import { RootContext, PathContext } from './Context';
 import Node from './Node';
-import { move, insert, update } from './Edits';
+import { move, insert } from './Edits';
 import { isSubPath, isSibling, pathForMove, hasMoved } from './utils/PathUtils';
-import { getChangedFields, hasFields } from './utils/FieldUtils';
 import { type Path } from './types/Path';
 import { type InsertData, type MoveData } from './types/Data';
 import { type ChildCountSpec } from './types/Children';
@@ -30,9 +29,7 @@ class Root extends React.Component<RootProps> {
     onError: () => {}
   };
 
-  handleDragStart = (path: Path[], fields: Object, type: string) => (
-    e: DragEvent
-  ) => {
+  handleDragStart = (path: Path[], type: string) => (e: DragEvent) => {
     if (!e.dataTransfer) {
       return;
     }
@@ -40,7 +37,6 @@ class Root extends React.Component<RootProps> {
       INTERNAL_TRANSFER_TYPE,
       JSON.stringify({
         path,
-        fields,
         type
       })
     );
@@ -68,7 +64,6 @@ class Root extends React.Component<RootProps> {
 
   handleDrop = (
     path: Path[],
-    fields: Object,
     getDuplicate: GetDuplicate,
     childInfo: ?ChildCountSpec
   ) => (e: DragEvent) => {
@@ -82,7 +77,7 @@ class Root extends React.Component<RootProps> {
 
     if (moveDataStr) {
       const moveData: MoveData = JSON.parse(moveDataStr);
-      this.handleMove(moveData, path, fields, childInfo);
+      this.handleMove(moveData, path, childInfo);
       return;
     }
 
@@ -100,16 +95,11 @@ class Root extends React.Component<RootProps> {
       return;
     }
 
-    this.handleInsert(data, path, fields, getDuplicate);
+    this.handleInsert(data, path, getDuplicate);
   };
 
-  handleMove(
-    dragData: MoveData,
-    path: Path[],
-    fields: Object,
-    childInfo: ?ChildCountSpec
-  ) {
-    const { path: dragPath, fields: dragFields } = dragData;
+  handleMove(dragData: MoveData, path: Path[], childInfo: ?ChildCountSpec) {
+    const { path: dragPath } = dragData;
 
     const { type: dragType, id } = dragPath[dragPath.length - 1];
     const { type } = path[path.length - 1];
@@ -139,13 +129,10 @@ class Root extends React.Component<RootProps> {
 
     const { index } = movePath[movePath.length - 1];
 
-    const changedFields = getChangedFields(dragFields, fields);
-
     const edits = [
       hasMoved(dragPath, path)
         ? move(type, id, dragPath, movePath, index)
-        : null,
-      hasFields(changedFields) ? update(type, id, changedFields) : null
+        : null
     ].filter(Boolean);
 
     if (edits.length) {
@@ -156,7 +143,6 @@ class Root extends React.Component<RootProps> {
   handleInsert(
     { type: dragType, id }: InsertData,
     path: Path[],
-    fields: Object,
     getDuplicate: GetDuplicate
   ) {
     const { type, index } = path[path.length - 1];
@@ -168,14 +154,9 @@ class Root extends React.Component<RootProps> {
     const duplicate = getDuplicate(dragType, id);
 
     if (duplicate) {
-      this.handleMove(duplicate, path, fields);
+      this.handleMove(duplicate, path);
     } else {
-      this.props.onChange(
-        [
-          insert(type, id, path, index),
-          hasFields(fields) ? update(type, id, fields) : null
-        ].filter(Boolean)
-      );
+      this.props.onChange([insert(type, id, path, index)].filter(Boolean));
     }
   }
 

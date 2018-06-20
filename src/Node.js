@@ -18,12 +18,10 @@ type NodeProps = {
 type NodePropsWithContext = NodeProps & {
   type: string,
   path: Path[],
-  fields: Object,
   register: (
     type: string,
     id: string,
     path: Path[],
-    fields: Object,
     index: number
   ) => void,
   deregister: (type: string, id: string) => void
@@ -43,9 +41,9 @@ class Node extends React.Component<NodePropsWithContext> {
   deregister = () => {};
 
   reregister = () => {
-    const { register, deregister, fields, type, index } = this.props;
+    const { register, deregister, type, index } = this.props;
     this.deregister();
-    register(type, this.dedupeKey, this.path, fields, index);
+    register(type, this.dedupeKey, this.path, index);
     this.deregister = () => deregister(type, this.dedupeKey);
   };
 
@@ -54,18 +52,17 @@ class Node extends React.Component<NodePropsWithContext> {
   componentWillUnmount = () => this.deregister();
 
   render = () => {
-    const { children, fields, type, id, index } = this.props;
+    const { children, type, id, index } = this.props;
 
     return (
       <RootContext.Consumer>
         {({ handleDragStart }) => (
-          <PathContext.Provider value={{ path: this.path, fields, type }}>
+          <PathContext.Provider value={{ path: this.path, type }}>
             {typeof children === 'function'
               ? children(() => ({
                   draggable: true,
                   onDragStart: handleDragStart(
                     this.path,
-                    fields[type] || {},
                     type
                   )
                 }))
@@ -79,7 +76,7 @@ class Node extends React.Component<NodePropsWithContext> {
 
 export default (props: NodeProps) => (
   <PathContext.Consumer>
-    {({ path, fields, type }) => (
+    {({ path, type }) => (
       <DedupeContext.Consumer>
         {({ register, deregister }) => (
           <Node
@@ -88,7 +85,6 @@ export default (props: NodeProps) => (
             register={register}
             deregister={deregister}
             path={path}
-            fields={fields}
           />
         )}
       </DedupeContext.Consumer>

@@ -27,7 +27,6 @@ const Front = ({ front }) => (
           <Indent>
             <Level
               arr={articleFragments}
-              offset={offset}
               type="articleFragment"
               renderDrop={renderDrop}
               maxChildren={2}
@@ -64,6 +63,3 @@ Behind the scenes the `Root` component will handle the drag and drop events, val
 
 ## Flow
 This package ships with flow types, in order to use them you will need to make sure your .flowconfig isn't ignoring `node_modules`. This may require black listing specifc `node_modules` that don't play nicely with Flow :(
-
-## Field
-The `<Field type="type" field="name" value="a" />` component should not be used if possible. It will cause all drop events in a drop zone for a specifc type that happen below it (and where the field has changed / been added) to fire an `UPDATE` edit to change the field. However, indices for the `MOVE` edit will be indexes into the Field rather than the parent (you can solve this using the `Level` `offset` prop and careful use of `reduce` but it's not nice and relied on keeping external state in a certain way). This is confusing and makes no sense so don't use it unless you really need to.

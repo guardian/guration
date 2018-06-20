@@ -1,6 +1,6 @@
 import React from 'react';
 import TestRenderer from 'react-test-renderer';
-import { Root, Node, Field, Children, Level, Dedupe } from '../index';
+import { Root, Node, Children, Level, Dedupe } from '../index';
 
 class DataTransfer {
   data = {};
@@ -248,77 +248,6 @@ describe('Guration', () => {
     runDrag(dragProps)(dropProps);
 
     expect(edit[0].payload.to.index).toBe(2);
-  });
-
-  it('creates UPDATE events for changed fields', () => {
-    let dragProps;
-    let dropProps;
-    let edit;
-
-    TestRenderer.create(
-      <Root type="@@ROOT" id="@@ROOT" onChange={e => (edit = e)}>
-        <Field type="a" field="b" value={1}>
-          <Children field="children1" type="a">
-            <Node type="a" id={2} index={0}>
-              {getDragProps => {
-                dragProps = getDragProps();
-              }}
-            </Node>
-          </Children>
-        </Field>
-        <Field type="a" field="b" value={2}>
-          <Children field="children2" type="a">
-            {getDropProps => {
-              dropProps = getDropProps(0);
-            }}
-          </Children>
-        </Field>
-      </Root>
-    );
-
-    runDrag(dragProps)(dropProps);
-
-    expect(edit[1]).toEqual({
-      type: 'UPDATE',
-      payload: {
-        id: 2,
-        type: 'a',
-        fields: {
-          b: 2
-        }
-      }
-    });
-  });
-
-  it('does not create UPDATE events when fields are unchanged', () => {
-    let dragProps;
-    let dropProps;
-    let edit;
-
-    TestRenderer.create(
-      <Root type="@@ROOT" id="@@ROOT" onChange={e => (edit = e)}>
-        <Children type="a">
-          <Field type="a" field="f" value={0}>
-            <Node type="a" id="1" index={0}>
-              {getDragProps => {
-                dragProps = getDragProps();
-              }}
-            </Node>
-            <Node type="a" id="2" index={1}>
-              <Children field="children" type="a">
-                {getDropProps => {
-                  dropProps = getDropProps(1);
-                }}
-              </Children>
-            </Node>
-          </Field>
-        </Children>
-      </Root>
-    );
-
-    runDrag(dragProps)(dropProps);
-
-    expect(edit[1]).toEqual(undefined);
   });
 
   it('does not create MOVE events when moves will have no impact', () => {
