@@ -31,14 +31,22 @@ type MoveDrop = MoveData & { dropType: 'MOVE' };
 type ValidDrop = InsertDrop | MoveDrop;
 
 type RootState = {
-  dropPath: ?(Path[])
+  dragData: ?MoveDrop,
+  dropInfo: {
+    path: ?(Path[]),
+    canDrop: boolean
+  }
 };
 
 class Root extends React.Component<RootProps, RootState> {
   eventHandled = false;
 
   state = {
-    dropPath: null
+    dragData: null,
+    dropInfo: {
+      path: null,
+      canDrop: false
+    }
   };
 
   static defaultProps = {
@@ -46,7 +54,7 @@ class Root extends React.Component<RootProps, RootState> {
     dropMappers: {}
   };
 
-  runLowest = (fn: () => void) => {
+  runLowestOnly = (fn: () => void) => {
     if (this.eventHandled) {
       return;
     }
@@ -65,6 +73,15 @@ class Root extends React.Component<RootProps, RootState> {
         type
       })
     );
+
+    // set this as we can't inspect dataTransfer on dragover
+    this.setState({
+      dragData: {
+        dropType: 'MOVE',
+        path,
+        type
+      }
+    });
   };
 
   get dropMappers(): { [string]: (text: string) => ValidDrop | string } {
@@ -91,21 +108,24 @@ class Root extends React.Component<RootProps, RootState> {
     return {
       ...insertMappers,
       [INTERNAL_TRANSFER_TYPE]: (data): MoveDrop => ({
-        ...(JSON.parse(data): MoveData),
+        ...JSON.parse(data),
         dropType: 'MOVE'
       })
     };
   }
 
-  setDropPath(path: ?(Path[])) {
+  setDropInfo(path: ?(Path[]), canDrop: boolean) {
+    const { path: dropPath } = this.state.dropInfo;
     if (
-      (!path && this.state.dropPath) ||
-      (path && !this.state.dropPath) ||
-      (path && this.state.dropPath && !eq(path, this.state.dropPath))
+      (!path && dropPath) ||
+      (path && !dropPath) ||
+      (path && dropPath && !eq(path, dropPath))
     ) {
-      console.log('setdroppath');
       this.setState({
-        dropPath: path
+        dropInfo: {
+          path,
+          canDrop
+        }
       });
     }
   }
@@ -130,23 +150,40 @@ class Root extends React.Component<RootProps, RootState> {
 
   handleDragOver = (
     candidatePath: Path[],
+    getDuplicate: GetDuplicate,
+    childInfo: ?ChildCountSpec,
     getIndexOffset: ?(e: DragEvent) => number
   ) => (e: DragEvent) => {
-    this.runLowest(() => {
+    this.runLowestOnly(() => {
       e.preventDefault();
-      this.runDragOver(candidatePath, getIndexOffset, e);
+      this.runDragOver(
+        candidatePath,
+        getDuplicate,
+        childInfo,
+        getIndexOffset,
+        e
+      );
     });
   };
 
   runDragOver = throttle(
     (
       candidatePath: Path[],
+      getDuplicate: GetDuplicate,
+      childInfo: ?ChildCountSpec,
       getIndexOffset: ?(e: DragEvent) => number,
       e: DragEvent
     ) => {
       const indexOffset = getIndexOffset ? getIndexOffset(e) : 0;
       const path = addOffset(candidatePath, indexOffset);
-      this.setDropPath(path);
+
+      let edits = [];
+      try {
+        edits = this.state.dragData
+          ? getEdits(this.state.dragData, path, getDuplicate, childInfo)
+          : [];
+      } catch (e) {}
+      this.setDropInfo(path, !!edits.length);
     },
     100,
     {
@@ -160,7 +197,7 @@ class Root extends React.Component<RootProps, RootState> {
     childInfo: ?ChildCountSpec,
     getIndexOffset: ?(e: DragEvent) => number
   ) => (e: DragEvent) => {
-    this.runLowest(() => {
+    this.runLowestOnly(() => {
       const { dataTransfer } = e;
 
       if (!dataTransfer) {
@@ -197,16 +234,18 @@ class Root extends React.Component<RootProps, RootState> {
     const { type, id, children } = this.props;
     return (
       <div
+        onDrop={() => {
+          this.setDropInfo(null, false);
+        }}
         onDragOver={() => {
           if (!this.eventHandled) {
-            this.setDropPath(null);
+            this.setDropInfo(null, false);
           }
           this.eventHandled = false;
         }}
         onDragEnd={() => {
-          console.l;
           this.eventHandled = false;
-          this.setDropPath(null);
+          this.setDropInfo(null, false);
         }}
       >
         <PathContext.Consumer>
@@ -217,7 +256,7 @@ class Root extends React.Component<RootProps, RootState> {
                   handleDragStart: this.handleDragStart,
                   handleDrop: this.handleDrop,
                   handleDragOver: this.handleDragOver,
-                  dropPath: this.state.dropPath
+                  dropInfo: this.state.dropInfo
                 }}
               >
                 <Node type={type} id={id} index={0}>

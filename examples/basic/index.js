@@ -6757,9 +6757,12 @@
 
 	const RootContext = react.createContext({
 	  handleDragStart: (path, type) => e => {},
-	  handleDragOver: (path, getIndexOffset) => e => {},
+	  handleDragOver: (path, getDuplicate, childInfo, getIndexOffset) => e => {},
 	  handleDrop: (path, getDuplicate, childInfo, getIndexOffset) => e => {},
-	  dropPath: null
+	  dropInfo: {
+	    path: null,
+	    canDrop: false
+	  }
 	});
 	const PathContext = react.createContext({
 	  path: [],
@@ -6824,20 +6827,18 @@
 	    var _temp;
 
 	    return _temp = super(...args), _defineProperty(this, "el", void 0), _defineProperty(this, "getIndexOffset", ({
-	      clientY
+	      clientY,
+	      target
 	    }) => {
-	      const {
-	        el
-	      } = this; // this should never happen!
-
-	      if (!el) {
+	      // this should never happen!
+	      if (!target || !(target instanceof HTMLElement)) {
 	        return 0;
 	      }
 
 	      const {
 	        top,
 	        height
-	      } = el.getBoundingClientRect();
+	      } = target.getBoundingClientRect();
 	      const offsetY = clientY - top;
 	      return offsetY > height / 2 ? 1 : 0;
 	    }), _defineProperty(this, "deregister", () => {}), _defineProperty(this, "reregister", () => {
@@ -6861,7 +6862,6 @@
 	      } = this.props;
 	      return react.createElement(RootContext.Consumer, null, ({
 	        handleDragStart,
-	        handleDragOver,
 	        handleDrop
 	      }) => react.createElement(PathContext.Provider, {
 	        value: {
@@ -7110,8 +7110,12 @@
 	    var _temp;
 
 	    return _temp = super(...args), _defineProperty(this, "eventHandled", false), _defineProperty(this, "state", {
-	      dropPath: null
-	    }), _defineProperty(this, "runLowest", fn => {
+	      dragData: null,
+	      dropInfo: {
+	        path: null,
+	        canDrop: false
+	      }
+	    }), _defineProperty(this, "runLowestOnly", fn => {
 	      if (this.eventHandled) {
 	        return;
 	      }
@@ -7126,20 +7130,34 @@
 	      e.dataTransfer.setData(INTERNAL_TRANSFER_TYPE, JSON.stringify({
 	        path,
 	        type
-	      }));
-	    }), _defineProperty(this, "handleDragOver", (candidatePath, getIndexOffset) => e => {
-	      this.runLowest(() => {
-	        e.preventDefault();
-	        this.runDragOver(candidatePath, getIndexOffset, e);
+	      })); // set this as we can't inspect dataTransfer on dragover
+
+	      this.setState({
+	        dragData: {
+	          dropType: 'MOVE',
+	          path,
+	          type
+	        }
 	      });
-	    }), _defineProperty(this, "runDragOver", lodash_throttle((candidatePath, getIndexOffset, e) => {
+	    }), _defineProperty(this, "handleDragOver", (candidatePath, getDuplicate, childInfo, getIndexOffset) => e => {
+	      this.runLowestOnly(() => {
+	        e.preventDefault();
+	        this.runDragOver(candidatePath, getDuplicate, childInfo, getIndexOffset, e);
+	      });
+	    }), _defineProperty(this, "runDragOver", lodash_throttle((candidatePath, getDuplicate, childInfo, getIndexOffset, e) => {
 	      const indexOffset = getIndexOffset ? getIndexOffset(e) : 0;
 	      const path = addOffset(candidatePath, indexOffset);
-	      this.setDropPath(path);
+	      let edits = [];
+
+	      try {
+	        edits = this.state.dragData ? getEdits(this.state.dragData, path, getDuplicate, childInfo) : [];
+	      } catch (e) {}
+
+	      this.setDropInfo(path, !!edits.length);
 	    }, 100, {
 	      trailing: false
 	    })), _defineProperty(this, "handleDrop", (candidatePath, getDuplicate, childInfo, getIndexOffset) => e => {
-	      this.runLowest(() => {
+	      this.runLowestOnly(() => {
 	        const {
 	          dataTransfer
 	        } = e;
@@ -7198,11 +7216,17 @@
 	    });
 	  }
 
-	  setDropPath(path) {
-	    if (!path && this.state.dropPath || path && !this.state.dropPath || path && this.state.dropPath && !eq(path, this.state.dropPath)) {
-	      console.log('setdroppath');
+	  setDropInfo(path, canDrop) {
+	    const {
+	      path: dropPath
+	    } = this.state.dropInfo;
+
+	    if (!path && dropPath || path && !dropPath || path && dropPath && !eq(path, dropPath)) {
 	      this.setState({
-	        dropPath: path
+	        dropInfo: {
+	          path,
+	          canDrop
+	        }
 	      });
 	    }
 	  }
@@ -7232,17 +7256,19 @@
 	      children
 	    } = this.props;
 	    return react.createElement("div", {
+	      onDrop: () => {
+	        this.setDropInfo(null, false);
+	      },
 	      onDragOver: () => {
 	        if (!this.eventHandled) {
-	          this.setDropPath(null);
+	          this.setDropInfo(null, false);
 	        }
 
 	        this.eventHandled = false;
 	      },
 	      onDragEnd: () => {
-	        console.l;
 	        this.eventHandled = false;
-	        this.setDropPath(null);
+	        this.setDropInfo(null, false);
 	      }
 	    }, react.createElement(PathContext.Consumer, null, (_ref) => {
 	      let pathContext = _extends({}, _ref);
@@ -7256,7 +7282,7 @@
 	          handleDragStart: this.handleDragStart,
 	          handleDrop: this.handleDrop,
 	          handleDragOver: this.handleDragOver,
-	          dropPath: this.state.dropPath
+	          dropInfo: this.state.dropInfo
 	        }
 	      }, react.createElement(Node$1, {
 	        type: type,
@@ -7286,7 +7312,7 @@
 	        getDuplicate
 	      } = this.props;
 	      return {
-	        onDragOver: handleDragOver(this.getDropPath(i), getOffsetIndex),
+	        onDragOver: handleDragOver(this.getDropPath(i), getDuplicate, childInfo, getOffsetIndex),
 	        onDrop: handleDrop(this.getDropPath(i), getDuplicate, childInfo, getOffsetIndex)
 	      };
 	    }), _temp;
@@ -7327,14 +7353,17 @@
 	    const {
 	      type,
 	      children,
-	      dropPath
+	      dropInfo: {
+	        path: dropPath,
+	        canDrop
+	      }
 	    } = this.props;
 	    return react.createElement(PathContext.Provider, {
 	      value: {
 	        path,
 	        type
 	      }
-	    }, typeof children === 'function' ? children(this.getDropProps, i => !!dropPath && eq(dropPath, this.getDropPath(i))) : children);
+	    }, typeof children === 'function' ? children(this.getDropProps, i => canDrop && !!dropPath && eq(dropPath, this.getDropPath(i))) : children);
 	  }
 
 	}
@@ -7342,7 +7371,7 @@
 	var Children$1 = (props => react.createElement(RootContext.Consumer, null, ({
 	  handleDrop,
 	  handleDragOver,
-	  dropPath
+	  dropInfo
 	}) => react.createElement(PathContext.Consumer, null, ({
 	  path
 	}) => react.createElement(DedupeContext.Consumer, null, ({
@@ -7350,7 +7379,7 @@
 	}) => react.createElement(Children, _extends({}, props, {
 	  handleDragOver: handleDragOver,
 	  handleDrop: handleDrop,
-	  dropPath: dropPath,
+	  dropInfo: dropInfo,
 	  path: path,
 	  getDuplicate: getDuplicate
 	}))))));
@@ -7374,7 +7403,7 @@
 	    return getDropProps(i, {
 	      childrenCount: arr.length,
 	      maxChildren
-	    });
+	    }, getIndexOffset);
 	  }
 
 	  renderDrop(i, getDropProps, isTarget) {

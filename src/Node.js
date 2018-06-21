@@ -38,15 +38,13 @@ class Node extends React.Component<NodePropsWithContext> {
     return dedupeKey || id;
   }
 
-  getIndexOffset = ({ clientY }: DragEvent) => {
-    const { el } = this;
-
+  getIndexOffset = ({ clientY, target }: DragEvent) => {
     // this should never happen!
-    if (!el) {
+    if (!target || !(target instanceof HTMLElement)) {
       return 0;
     }
 
-    const { top, height } = el.getBoundingClientRect();
+    const { top, height } = target.getBoundingClientRect();
     const offsetY = clientY - top;
 
     return offsetY > height / 2 ? 1 : 0;
@@ -70,7 +68,7 @@ class Node extends React.Component<NodePropsWithContext> {
 
     return (
       <RootContext.Consumer>
-        {({ handleDragStart, handleDragOver, handleDrop }) => (
+        {({ handleDragStart, handleDrop }) => (
           <PathContext.Provider value={{ path: this.path, type }}>
             {typeof children === 'function'
               ? children(

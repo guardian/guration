@@ -52,7 +52,11 @@ class Level<T: *> extends React.Component<LevelProps<T>> {
 
   getDropProps(getDropProps: *, i: number, getIndexOffset: *) {
     const { arr, maxChildren } = this.props;
-    return getDropProps(i, { childrenCount: arr.length, maxChildren });
+    return getDropProps(
+      i,
+      { childrenCount: arr.length, maxChildren },
+      getIndexOffset
+    );
   }
 
   renderDrop(i: number, getDropProps: *, isTarget: *) {

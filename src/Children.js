@@ -24,7 +24,10 @@ type ChildrenProps = {
 type ChildrenPropsWithContext = ChildrenProps & {
   handleDragOver: *,
   handleDrop: *,
-  dropPath: ?(Path[]),
+  dropInfo: {
+    path: ?(Path[]),
+    canDrop: boolean
+  },
   path: Path[],
   getDuplicate: *
 };
@@ -57,7 +60,12 @@ class Children extends React.Component<ChildrenPropsWithContext> {
     const { type, handleDragOver, handleDrop, path, getDuplicate } = this.props;
 
     return {
-      onDragOver: handleDragOver(this.getDropPath(i), getOffsetIndex),
+      onDragOver: handleDragOver(
+        this.getDropPath(i),
+        getDuplicate,
+        childInfo,
+        getOffsetIndex
+      ),
       onDrop: handleDrop(
         this.getDropPath(i),
         getDuplicate,
@@ -69,7 +77,11 @@ class Children extends React.Component<ChildrenPropsWithContext> {
 
   render() {
     const { path } = this;
-    const { type, children, dropPath } = this.props;
+    const {
+      type,
+      children,
+      dropInfo: { path: dropPath, canDrop }
+    } = this.props;
 
     return (
       <PathContext.Provider
@@ -81,7 +93,7 @@ class Children extends React.Component<ChildrenPropsWithContext> {
         {typeof children === 'function'
           ? children(
               this.getDropProps,
-              (i: number) => !!dropPath && eq(dropPath, this.getDropPath(i))
+              (i: number) => canDrop && !!dropPath && eq(dropPath, this.getDropPath(i))
             )
           : children}
       </PathContext.Provider>
@@ -91,7 +103,7 @@ class Children extends React.Component<ChildrenPropsWithContext> {
 
 export default (props: ChildrenProps) => (
   <RootContext.Consumer>
-    {({ handleDrop, handleDragOver, dropPath }) => (
+    {({ handleDrop, handleDragOver, dropInfo }) => (
       <PathContext.Consumer>
         {({ path }) => (
           <DedupeContext.Consumer>
@@ -100,7 +112,7 @@ export default (props: ChildrenProps) => (
                 {...props}
                 handleDragOver={handleDragOver}
                 handleDrop={handleDrop}
-                dropPath={dropPath}
+                dropInfo={dropInfo}
                 path={path}
                 getDuplicate={getDuplicate}
               />

@@ -9,7 +9,7 @@ type InsertData = {
 
 type MoveData = {
   path: Path[],
-  index: number
+  type: string
 };
 
 export type { InsertData, MoveData };
