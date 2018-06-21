@@ -4,7 +4,7 @@ import React, { type Node as ReactNode } from 'react';
 import { RootContext, PathContext } from './Context';
 import Node from './Node';
 import { move, insert } from './Edits';
-import { isSubPath, isSibling, pathForMove, hasMoved } from './utils/PathUtils';
+import { isSubPath, isSibling, pathForMove, hasMoved,  } from './utils/PathUtils';
 import { type Path } from './types/Path';
 import { type InsertData, type MoveData } from './types/Data';
 import { type ChildCountSpec } from './types/Children';
@@ -40,7 +40,7 @@ const updatePath = (candidatePath, offset) => {
 };
 
 class Root extends React.Component<RootProps, RootState> {
-  handled = false;
+  eventHandled = false;
 
   state = {
     dropPath: null
@@ -83,14 +83,15 @@ class Root extends React.Component<RootProps, RootState> {
     return dropMappers[type](dataTransfer.getData(type));
   }
 
+  // TODO: debounce me!!!
   handleDragOver = (
     candidatePath: Path[],
     getIndexOffset: ?(e: DragEvent) => number
   ) => (e: DragEvent) => {
-    if (this.handled) {
+    if (this.eventHandled) {
       return;
     }
-    this.handled = true;
+    this.eventHandled = true;
     e.preventDefault();
     const indexOffset = getIndexOffset ? getIndexOffset(e) : 0;
     const path = updatePath(candidatePath, indexOffset);
@@ -105,16 +106,20 @@ class Root extends React.Component<RootProps, RootState> {
     childInfo: ?ChildCountSpec,
     getIndexOffset: ?(e: DragEvent) => number
   ) => (e: DragEvent) => {
-    if (this.handled) {
+    if (this.eventHandled) {
       return;
     }
-    this.handled = true;
+    this.eventHandled = true;
 
     const { dataTransfer } = e;
 
     if (!dataTransfer) {
       return;
     }
+
+    // TODO: separate this logic and run it on dragover as well so that
+    // drop path can be set to null if things don't validate, meaning drop
+    // zones won't highlight
 
     const indexOffset = getIndexOffset ? getIndexOffset(e) : 0;
     const path = updatePath(candidatePath, indexOffset);
@@ -211,15 +216,15 @@ class Root extends React.Component<RootProps, RootState> {
     return (
       <div
         onDrop={() => {
-          this.handled = false;
+          this.eventHandled = false;
         }}
         onDragOver={() => {
-          if (!this.handled) {
+          if (!this.eventHandled) {
             this.setState({
               dropPath: null
             });
           }
-          this.handled = false;
+          this.eventHandled = false;
         }}
         onDragEnd={() => {
           this.setState({

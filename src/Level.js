@@ -72,17 +72,19 @@ const Level = <T: *>({
               <Node
                 id={getKey(child)}
                 dedupeKey={getDedupeKey(child)}
-                getDropProps={getIndexOffset =>
-                  getDropProps(
-                    i,
-                    { childrenCount: arr.length, maxChildren },
-                    getIndexOffset
-                  )
-                }
                 index={i}
               >
-                {(getDragProps, dropProps) =>
-                  children(child, getDragProps, dropProps, i)
+                {(getDragProps, getIndexOffset) =>
+                  children(
+                    child,
+                    getDragProps,
+                    getDropProps(
+                      i,
+                      { childrenCount: arr.length, maxChildren },
+                      getIndexOffset
+                    ),
+                    i
+                  )
                 }
               </Node>
             </React.Fragment>

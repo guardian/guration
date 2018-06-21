@@ -5,11 +5,13 @@ import { RootContext, PathContext, DedupeContext } from './Context';
 import Dedupe from './Dedupe';
 import { type Path } from './types/Path';
 
-type ChildFunc = (getDragProps: () => Object, dropProps: Object) => ReactNode;
+type ChildFunc = (
+  getDragProps: () => Object,
+  getIndexOffset: (e: DragEvent) => number
+) => ReactNode;
 
 type NodeProps = {
   children: ChildFunc | ReactNode,
-  getDropProps?: ((e: DragEvent) => number) => Object,
   id: string,
   dedupeKey?: string,
   index: number
@@ -64,14 +66,7 @@ class Node extends React.Component<NodePropsWithContext> {
   componentWillUnmount = () => this.deregister();
 
   render = () => {
-    const {
-      children,
-      getDuplicate,
-      getDropProps,
-      type,
-      id,
-      index
-    } = this.props;
+    const { children, getDuplicate, type, id, index } = this.props;
 
     return (
       <RootContext.Consumer>
@@ -83,14 +78,7 @@ class Node extends React.Component<NodePropsWithContext> {
                     draggable: true,
                     onDragStart: handleDragStart(this.path, type)
                   }),
-                  getDropProps
-                    ? {
-                        ...getDropProps(this.getIndexOffset),
-                        ref: node => {
-                          this.el = node;
-                        }
-                      }
-                    : {}
+                  this.getIndexOffset
                 )
               : children}
           </PathContext.Provider>

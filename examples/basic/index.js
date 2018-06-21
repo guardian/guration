@@ -6400,7 +6400,6 @@
 	      const {
 	        children,
 	        getDuplicate,
-	        getDropProps,
 	        type,
 	        id,
 	        index
@@ -6417,11 +6416,7 @@
 	      }, typeof children === 'function' ? children(() => ({
 	        draggable: true,
 	        onDragStart: handleDragStart(this.path, type)
-	      }), getDropProps ? _objectSpread({}, getDropProps(this.getIndexOffset), {
-	        ref: node => {
-	          this.el = node;
-	        }
-	      }) : {}) : children));
+	      }), this.getIndexOffset) : children));
 	    }), _temp;
 	  }
 
@@ -6607,7 +6602,7 @@
 	  constructor(...args) {
 	    var _temp;
 
-	    return _temp = super(...args), _defineProperty(this, "handled", false), _defineProperty(this, "state", {
+	    return _temp = super(...args), _defineProperty(this, "eventHandled", false), _defineProperty(this, "state", {
 	      dropPath: null
 	    }), _defineProperty(this, "handleDragStart", (path, type) => e => {
 	      if (!e.dataTransfer) {
@@ -6619,11 +6614,11 @@
 	        type
 	      }));
 	    }), _defineProperty(this, "handleDragOver", (candidatePath, getIndexOffset) => e => {
-	      if (this.handled) {
+	      if (this.eventHandled) {
 	        return;
 	      }
 
-	      this.handled = true;
+	      this.eventHandled = true;
 	      e.preventDefault();
 	      const indexOffset = getIndexOffset ? getIndexOffset(e) : 0;
 	      const path = updatePath(candidatePath, indexOffset);
@@ -6631,18 +6626,21 @@
 	        dropPath: path
 	      });
 	    }), _defineProperty(this, "handleDrop", (candidatePath, getDuplicate, childInfo, getIndexOffset) => e => {
-	      if (this.handled) {
+	      if (this.eventHandled) {
 	        return;
 	      }
 
-	      this.handled = true;
+	      this.eventHandled = true;
 	      const {
 	        dataTransfer
 	      } = e;
 
 	      if (!dataTransfer) {
 	        return;
-	      }
+	      } // TODO: separate this logic and run it on dragover as well so that
+	      // drop path can be set to null if things don't validate, meaning drop
+	      // zones won't highlight
+
 
 	      const indexOffset = getIndexOffset ? getIndexOffset(e) : 0;
 	      const path = updatePath(candidatePath, indexOffset);
@@ -6689,7 +6687,8 @@
 	    }
 
 	    return dropMappers[type](dataTransfer.getData(type));
-	  }
+	  } // TODO: debounce me!!!
+
 
 	  handleMove(dragData, path, childInfo) {
 	    const {
@@ -6760,16 +6759,16 @@
 	    } = this.props;
 	    return react.createElement("div", {
 	      onDrop: () => {
-	        this.handled = false;
+	        this.eventHandled = false;
 	      },
 	      onDragOver: () => {
-	        if (!this.handled) {
+	        if (!this.eventHandled) {
 	          this.setState({
 	            dropPath: null
 	          });
 	        }
 
-	        this.handled = false;
+	        this.eventHandled = false;
 	      },
 	      onDragEnd: () => {
 	        this.setState({
@@ -6924,12 +6923,11 @@
 	  }), isTarget(i), i), react.createElement(Node$1, {
 	    id: getKey(child),
 	    dedupeKey: getDedupeKey(child),
-	    getDropProps: getIndexOffset => getDropProps(i, {
-	      childrenCount: arr.length,
-	      maxChildren
-	    }, getIndexOffset),
 	    index: i
-	  }, (getDragProps, dropProps) => children(child, getDragProps, dropProps, i)))), renderDrop && renderDrop(getDropProps(arr.length, {
+	  }, (getDragProps, getIndexOffset) => children(child, getDragProps, getDropProps(i, {
+	    childrenCount: arr.length,
+	    maxChildren
+	  }, getIndexOffset), i)))), renderDrop && renderDrop(getDropProps(arr.length, {
 	    childrenCount: arr.length,
 	    maxChildren
 	  }), isTarget(arr.length), arr.length)));
