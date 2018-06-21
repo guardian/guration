@@ -1,6 +1,8 @@
 (function () {
 	'use strict';
 
+	var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
+
 	function createCommonjsModule(fn, module) {
 		return module = { exports: {} }, fn(module, module.exports), module.exports;
 	}
@@ -6300,6 +6302,459 @@
 	  return target;
 	}
 
+	/**
+	 * lodash (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modularize exports="npm" -o ./`
+	 * Copyright jQuery Foundation and other contributors <https://jquery.org/>
+	 * Released under MIT license <https://lodash.com/license>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 */
+
+	/** Used as the `TypeError` message for "Functions" methods. */
+	var FUNC_ERROR_TEXT = 'Expected a function';
+	/** Used as references for various `Number` constants. */
+
+	var NAN = 0 / 0;
+	/** `Object#toString` result references. */
+
+	var symbolTag = '[object Symbol]';
+	/** Used to match leading and trailing whitespace. */
+
+	var reTrim = /^\s+|\s+$/g;
+	/** Used to detect bad signed hexadecimal string values. */
+
+	var reIsBadHex = /^[-+]0x[0-9a-f]+$/i;
+	/** Used to detect binary string values. */
+
+	var reIsBinary = /^0b[01]+$/i;
+	/** Used to detect octal string values. */
+
+	var reIsOctal = /^0o[0-7]+$/i;
+	/** Built-in method references without a dependency on `root`. */
+
+	var freeParseInt = parseInt;
+	/** Detect free variable `global` from Node.js. */
+
+	var freeGlobal = typeof commonjsGlobal == 'object' && commonjsGlobal && commonjsGlobal.Object === Object && commonjsGlobal;
+	/** Detect free variable `self`. */
+
+	var freeSelf = typeof self == 'object' && self && self.Object === Object && self;
+	/** Used as a reference to the global object. */
+
+	var root = freeGlobal || freeSelf || Function('return this')();
+	/** Used for built-in method references. */
+
+	var objectProto = Object.prototype;
+	/**
+	 * Used to resolve the
+	 * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
+	 * of values.
+	 */
+
+	var objectToString = objectProto.toString;
+	/* Built-in method references for those with the same name as other `lodash` methods. */
+
+	var nativeMax = Math.max,
+	    nativeMin = Math.min;
+	/**
+	 * Gets the timestamp of the number of milliseconds that have elapsed since
+	 * the Unix epoch (1 January 1970 00:00:00 UTC).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 2.4.0
+	 * @category Date
+	 * @returns {number} Returns the timestamp.
+	 * @example
+	 *
+	 * _.defer(function(stamp) {
+	 *   console.log(_.now() - stamp);
+	 * }, _.now());
+	 * // => Logs the number of milliseconds it took for the deferred invocation.
+	 */
+
+	var now = function () {
+	  return root.Date.now();
+	};
+	/**
+	 * Creates a debounced function that delays invoking `func` until after `wait`
+	 * milliseconds have elapsed since the last time the debounced function was
+	 * invoked. The debounced function comes with a `cancel` method to cancel
+	 * delayed `func` invocations and a `flush` method to immediately invoke them.
+	 * Provide `options` to indicate whether `func` should be invoked on the
+	 * leading and/or trailing edge of the `wait` timeout. The `func` is invoked
+	 * with the last arguments provided to the debounced function. Subsequent
+	 * calls to the debounced function return the result of the last `func`
+	 * invocation.
+	 *
+	 * **Note:** If `leading` and `trailing` options are `true`, `func` is
+	 * invoked on the trailing edge of the timeout only if the debounced function
+	 * is invoked more than once during the `wait` timeout.
+	 *
+	 * If `wait` is `0` and `leading` is `false`, `func` invocation is deferred
+	 * until to the next tick, similar to `setTimeout` with a timeout of `0`.
+	 *
+	 * See [David Corbacho's article](https://css-tricks.com/debouncing-throttling-explained-examples/)
+	 * for details over the differences between `_.debounce` and `_.throttle`.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.1.0
+	 * @category Function
+	 * @param {Function} func The function to debounce.
+	 * @param {number} [wait=0] The number of milliseconds to delay.
+	 * @param {Object} [options={}] The options object.
+	 * @param {boolean} [options.leading=false]
+	 *  Specify invoking on the leading edge of the timeout.
+	 * @param {number} [options.maxWait]
+	 *  The maximum time `func` is allowed to be delayed before it's invoked.
+	 * @param {boolean} [options.trailing=true]
+	 *  Specify invoking on the trailing edge of the timeout.
+	 * @returns {Function} Returns the new debounced function.
+	 * @example
+	 *
+	 * // Avoid costly calculations while the window size is in flux.
+	 * jQuery(window).on('resize', _.debounce(calculateLayout, 150));
+	 *
+	 * // Invoke `sendMail` when clicked, debouncing subsequent calls.
+	 * jQuery(element).on('click', _.debounce(sendMail, 300, {
+	 *   'leading': true,
+	 *   'trailing': false
+	 * }));
+	 *
+	 * // Ensure `batchLog` is invoked once after 1 second of debounced calls.
+	 * var debounced = _.debounce(batchLog, 250, { 'maxWait': 1000 });
+	 * var source = new EventSource('/stream');
+	 * jQuery(source).on('message', debounced);
+	 *
+	 * // Cancel the trailing debounced invocation.
+	 * jQuery(window).on('popstate', debounced.cancel);
+	 */
+
+
+	function debounce(func, wait, options) {
+	  var lastArgs,
+	      lastThis,
+	      maxWait,
+	      result,
+	      timerId,
+	      lastCallTime,
+	      lastInvokeTime = 0,
+	      leading = false,
+	      maxing = false,
+	      trailing = true;
+
+	  if (typeof func != 'function') {
+	    throw new TypeError(FUNC_ERROR_TEXT);
+	  }
+
+	  wait = toNumber(wait) || 0;
+
+	  if (isObject(options)) {
+	    leading = !!options.leading;
+	    maxing = 'maxWait' in options;
+	    maxWait = maxing ? nativeMax(toNumber(options.maxWait) || 0, wait) : maxWait;
+	    trailing = 'trailing' in options ? !!options.trailing : trailing;
+	  }
+
+	  function invokeFunc(time) {
+	    var args = lastArgs,
+	        thisArg = lastThis;
+	    lastArgs = lastThis = undefined;
+	    lastInvokeTime = time;
+	    result = func.apply(thisArg, args);
+	    return result;
+	  }
+
+	  function leadingEdge(time) {
+	    // Reset any `maxWait` timer.
+	    lastInvokeTime = time; // Start the timer for the trailing edge.
+
+	    timerId = setTimeout(timerExpired, wait); // Invoke the leading edge.
+
+	    return leading ? invokeFunc(time) : result;
+	  }
+
+	  function remainingWait(time) {
+	    var timeSinceLastCall = time - lastCallTime,
+	        timeSinceLastInvoke = time - lastInvokeTime,
+	        result = wait - timeSinceLastCall;
+	    return maxing ? nativeMin(result, maxWait - timeSinceLastInvoke) : result;
+	  }
+
+	  function shouldInvoke(time) {
+	    var timeSinceLastCall = time - lastCallTime,
+	        timeSinceLastInvoke = time - lastInvokeTime; // Either this is the first call, activity has stopped and we're at the
+	    // trailing edge, the system time has gone backwards and we're treating
+	    // it as the trailing edge, or we've hit the `maxWait` limit.
+
+	    return lastCallTime === undefined || timeSinceLastCall >= wait || timeSinceLastCall < 0 || maxing && timeSinceLastInvoke >= maxWait;
+	  }
+
+	  function timerExpired() {
+	    var time = now();
+
+	    if (shouldInvoke(time)) {
+	      return trailingEdge(time);
+	    } // Restart the timer.
+
+
+	    timerId = setTimeout(timerExpired, remainingWait(time));
+	  }
+
+	  function trailingEdge(time) {
+	    timerId = undefined; // Only invoke if we have `lastArgs` which means `func` has been
+	    // debounced at least once.
+
+	    if (trailing && lastArgs) {
+	      return invokeFunc(time);
+	    }
+
+	    lastArgs = lastThis = undefined;
+	    return result;
+	  }
+
+	  function cancel() {
+	    if (timerId !== undefined) {
+	      clearTimeout(timerId);
+	    }
+
+	    lastInvokeTime = 0;
+	    lastArgs = lastCallTime = lastThis = timerId = undefined;
+	  }
+
+	  function flush() {
+	    return timerId === undefined ? result : trailingEdge(now());
+	  }
+
+	  function debounced() {
+	    var time = now(),
+	        isInvoking = shouldInvoke(time);
+	    lastArgs = arguments;
+	    lastThis = this;
+	    lastCallTime = time;
+
+	    if (isInvoking) {
+	      if (timerId === undefined) {
+	        return leadingEdge(lastCallTime);
+	      }
+
+	      if (maxing) {
+	        // Handle invocations in a tight loop.
+	        timerId = setTimeout(timerExpired, wait);
+	        return invokeFunc(lastCallTime);
+	      }
+	    }
+
+	    if (timerId === undefined) {
+	      timerId = setTimeout(timerExpired, wait);
+	    }
+
+	    return result;
+	  }
+
+	  debounced.cancel = cancel;
+	  debounced.flush = flush;
+	  return debounced;
+	}
+	/**
+	 * Creates a throttled function that only invokes `func` at most once per
+	 * every `wait` milliseconds. The throttled function comes with a `cancel`
+	 * method to cancel delayed `func` invocations and a `flush` method to
+	 * immediately invoke them. Provide `options` to indicate whether `func`
+	 * should be invoked on the leading and/or trailing edge of the `wait`
+	 * timeout. The `func` is invoked with the last arguments provided to the
+	 * throttled function. Subsequent calls to the throttled function return the
+	 * result of the last `func` invocation.
+	 *
+	 * **Note:** If `leading` and `trailing` options are `true`, `func` is
+	 * invoked on the trailing edge of the timeout only if the throttled function
+	 * is invoked more than once during the `wait` timeout.
+	 *
+	 * If `wait` is `0` and `leading` is `false`, `func` invocation is deferred
+	 * until to the next tick, similar to `setTimeout` with a timeout of `0`.
+	 *
+	 * See [David Corbacho's article](https://css-tricks.com/debouncing-throttling-explained-examples/)
+	 * for details over the differences between `_.throttle` and `_.debounce`.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.1.0
+	 * @category Function
+	 * @param {Function} func The function to throttle.
+	 * @param {number} [wait=0] The number of milliseconds to throttle invocations to.
+	 * @param {Object} [options={}] The options object.
+	 * @param {boolean} [options.leading=true]
+	 *  Specify invoking on the leading edge of the timeout.
+	 * @param {boolean} [options.trailing=true]
+	 *  Specify invoking on the trailing edge of the timeout.
+	 * @returns {Function} Returns the new throttled function.
+	 * @example
+	 *
+	 * // Avoid excessively updating the position while scrolling.
+	 * jQuery(window).on('scroll', _.throttle(updatePosition, 100));
+	 *
+	 * // Invoke `renewToken` when the click event is fired, but not more than once every 5 minutes.
+	 * var throttled = _.throttle(renewToken, 300000, { 'trailing': false });
+	 * jQuery(element).on('click', throttled);
+	 *
+	 * // Cancel the trailing throttled invocation.
+	 * jQuery(window).on('popstate', throttled.cancel);
+	 */
+
+
+	function throttle(func, wait, options) {
+	  var leading = true,
+	      trailing = true;
+
+	  if (typeof func != 'function') {
+	    throw new TypeError(FUNC_ERROR_TEXT);
+	  }
+
+	  if (isObject(options)) {
+	    leading = 'leading' in options ? !!options.leading : leading;
+	    trailing = 'trailing' in options ? !!options.trailing : trailing;
+	  }
+
+	  return debounce(func, wait, {
+	    'leading': leading,
+	    'maxWait': wait,
+	    'trailing': trailing
+	  });
+	}
+	/**
+	 * Checks if `value` is the
+	 * [language type](http://www.ecma-international.org/ecma-262/7.0/#sec-ecmascript-language-types)
+	 * of `Object`. (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.1.0
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+	 * @example
+	 *
+	 * _.isObject({});
+	 * // => true
+	 *
+	 * _.isObject([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isObject(_.noop);
+	 * // => true
+	 *
+	 * _.isObject(null);
+	 * // => false
+	 */
+
+
+	function isObject(value) {
+	  var type = typeof value;
+	  return !!value && (type == 'object' || type == 'function');
+	}
+	/**
+	 * Checks if `value` is object-like. A value is object-like if it's not `null`
+	 * and has a `typeof` result of "object".
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 4.0.0
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 * @example
+	 *
+	 * _.isObjectLike({});
+	 * // => true
+	 *
+	 * _.isObjectLike([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isObjectLike(_.noop);
+	 * // => false
+	 *
+	 * _.isObjectLike(null);
+	 * // => false
+	 */
+
+
+	function isObjectLike(value) {
+	  return !!value && typeof value == 'object';
+	}
+	/**
+	 * Checks if `value` is classified as a `Symbol` primitive or object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 4.0.0
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a symbol, else `false`.
+	 * @example
+	 *
+	 * _.isSymbol(Symbol.iterator);
+	 * // => true
+	 *
+	 * _.isSymbol('abc');
+	 * // => false
+	 */
+
+
+	function isSymbol(value) {
+	  return typeof value == 'symbol' || isObjectLike(value) && objectToString.call(value) == symbolTag;
+	}
+	/**
+	 * Converts `value` to a number.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 4.0.0
+	 * @category Lang
+	 * @param {*} value The value to process.
+	 * @returns {number} Returns the number.
+	 * @example
+	 *
+	 * _.toNumber(3.2);
+	 * // => 3.2
+	 *
+	 * _.toNumber(Number.MIN_VALUE);
+	 * // => 5e-324
+	 *
+	 * _.toNumber(Infinity);
+	 * // => Infinity
+	 *
+	 * _.toNumber('3.2');
+	 * // => 3.2
+	 */
+
+
+	function toNumber(value) {
+	  if (typeof value == 'number') {
+	    return value;
+	  }
+
+	  if (isSymbol(value)) {
+	    return NAN;
+	  }
+
+	  if (isObject(value)) {
+	    var other = typeof value.valueOf == 'function' ? value.valueOf() : value;
+	    value = isObject(other) ? other + '' : other;
+	  }
+
+	  if (typeof value != 'string') {
+	    return value === 0 ? value : +value;
+	  }
+
+	  value = value.replace(reTrim, '');
+	  var isBinary = reIsBinary.test(value);
+	  return isBinary || reIsOctal.test(value) ? freeParseInt(value.slice(2), isBinary ? 2 : 8) : reIsBadHex.test(value) ? NAN : +value;
+	}
+
+	var lodash_throttle = throttle;
+
 	const RootContext = react.createContext({
 	  handleDragStart: (path, type) => e => {},
 	  handleDragOver: (path, getIndexOffset) => e => {},
@@ -6459,33 +6914,6 @@
 	  path: path
 	})))));
 
-	const move = (type, id, dragPath, path, newIndex) => ({
-	  type: 'MOVE',
-	  payload: {
-	    type,
-	    id,
-	    from: {
-	      parent: dragPath[dragPath.length - 2]
-	    },
-	    to: {
-	      parent: path[path.length - 2],
-	      index: newIndex
-	    }
-	  }
-	});
-
-	const insert = (type, id, dragPath, newIndex) => ({
-	  type: 'INSERT',
-	  payload: {
-	    type,
-	    id,
-	    path: {
-	      parent: dragPath[dragPath.length - 2],
-	      index: newIndex
-	    }
-	  }
-	});
-
 	const elEq = (a, b, checkChildren = false) => {
 	  const {
 	    index: i1,
@@ -6589,14 +7017,93 @@
 	  return false;
 	};
 
-	const INTERNAL_TRANSFER_TYPE = '@@TRANSFER';
-
-	const updatePath = (candidatePath, offset) => {
+	const addOffset = (candidatePath, offset) => {
 	  const parent = candidatePath[candidatePath.length - 1];
 	  return [...candidatePath.slice(0, candidatePath.length - 1), _objectSpread({}, parent, {
 	    index: parent.index + offset
 	  })];
 	};
+
+	const move = (type, id, dragPath, path, newIndex) => ({
+	  type: 'MOVE',
+	  payload: {
+	    type,
+	    id,
+	    from: {
+	      parent: dragPath[dragPath.length - 2]
+	    },
+	    to: {
+	      parent: path[path.length - 2],
+	      index: newIndex
+	    }
+	  }
+	});
+
+	const insert = (type, id, dragPath, newIndex) => ({
+	  type: 'INSERT',
+	  payload: {
+	    type,
+	    id,
+	    path: {
+	      parent: dragPath[dragPath.length - 2],
+	      index: newIndex
+	    }
+	  }
+	});
+
+	const getEdits = (inputData, inputPath, getDuplicate, childInfo) => inputData.dropType === 'MOVE' ? handleMove(inputData.path, inputPath, childInfo) : handleInsert(inputData, inputPath, getDuplicate, childInfo);
+
+	const handleMove = (prevPath, nextPath, childInfo) => {
+	  const {
+	    type: dragType,
+	    id
+	  } = prevPath[prevPath.length - 1];
+	  const {
+	    type
+	  } = nextPath[nextPath.length - 1];
+
+	  if (dragType !== type) {
+	    throw new Error(`can't drop ${dragType} where ${type} should go`);
+	  }
+
+	  if (isSubPath(prevPath, nextPath)) {
+	    throw new Error(`can't drop into itself`);
+	  }
+
+	  if (isSibling(prevPath, nextPath) && childInfo && childInfo.childrenCount >= childInfo.maxChildren) {
+	    throw new Error('Cannot drop, too many children and have not implemented replace logic');
+	  }
+
+	  const movePath = pathForMove(prevPath, nextPath);
+	  const {
+	    index
+	  } = movePath[movePath.length - 1];
+	  const edits = [hasMoved(prevPath, nextPath) ? move(type, id, prevPath, movePath, index) : null].filter(Boolean);
+	  return edits;
+	};
+
+	const handleInsert = ({
+	  type: dragType,
+	  id
+	}, path, getDuplicate, childInfo) => {
+	  if (childInfo && childInfo.childrenCount >= childInfo.maxChildren) {
+	    throw new Error('Cannot drop, too many children and have not implemented replace logic');
+	  }
+
+	  const {
+	    type,
+	    index
+	  } = path[path.length - 1];
+
+	  if (dragType !== type) {
+	    throw new Error(`can't drop ${dragType} where ${type} should go`);
+	  }
+
+	  const duplicate = getDuplicate(dragType, id);
+	  return duplicate ? handleMove(duplicate.path, path) : [insert(type, id, path, index)].filter(Boolean);
+	};
+
+	const INTERNAL_TRANSFER_TYPE = '@@TRANSFER';
 
 	class Root extends react.Component {
 	  constructor(...args) {
@@ -6604,6 +7111,13 @@
 
 	    return _temp = super(...args), _defineProperty(this, "eventHandled", false), _defineProperty(this, "state", {
 	      dropPath: null
+	    }), _defineProperty(this, "runLowest", fn => {
+	      if (this.eventHandled) {
+	        return;
+	      }
+
+	      this.eventHandled = true;
+	      fn();
 	    }), _defineProperty(this, "handleDragStart", (path, type) => e => {
 	      if (!e.dataTransfer) {
 	        return;
@@ -6614,64 +7128,86 @@
 	        type
 	      }));
 	    }), _defineProperty(this, "handleDragOver", (candidatePath, getIndexOffset) => e => {
-	      if (this.eventHandled) {
-	        return;
-	      }
-
-	      this.eventHandled = true;
-	      e.preventDefault();
-	      const indexOffset = getIndexOffset ? getIndexOffset(e) : 0;
-	      const path = updatePath(candidatePath, indexOffset);
-	      this.setState({
-	        dropPath: path
+	      this.runLowest(() => {
+	        e.preventDefault();
+	        this.runDragOver(candidatePath, getIndexOffset, e);
 	      });
-	    }), _defineProperty(this, "handleDrop", (candidatePath, getDuplicate, childInfo, getIndexOffset) => e => {
-	      if (this.eventHandled) {
-	        return;
-	      }
-
-	      this.eventHandled = true;
-	      const {
-	        dataTransfer
-	      } = e;
-
-	      if (!dataTransfer) {
-	        return;
-	      } // TODO: separate this logic and run it on dragover as well so that
-	      // drop path can be set to null if things don't validate, meaning drop
-	      // zones won't highlight
-
-
+	    }), _defineProperty(this, "runDragOver", lodash_throttle((candidatePath, getIndexOffset, e) => {
 	      const indexOffset = getIndexOffset ? getIndexOffset(e) : 0;
-	      const path = updatePath(candidatePath, indexOffset);
-	      const moveDataStr = dataTransfer.getData(INTERNAL_TRANSFER_TYPE);
+	      const path = addOffset(candidatePath, indexOffset);
+	      this.setDropPath(path);
+	    }, 100, {
+	      trailing: false
+	    })), _defineProperty(this, "handleDrop", (candidatePath, getDuplicate, childInfo, getIndexOffset) => e => {
+	      this.runLowest(() => {
+	        const {
+	          dataTransfer
+	        } = e;
 
-	      if (moveDataStr) {
-	        const moveData = JSON.parse(moveDataStr);
-	        this.handleMove(moveData, path, childInfo);
-	        return;
-	      }
+	        if (!dataTransfer) {
+	          return;
+	        } // TODO: separate this logic and run it on dragover as well so that
+	        // drop path can be set to null if things don't validate, meaning drop
+	        // zones won't highlight
 
-	      if (childInfo && childInfo.childrenCount >= childInfo.maxChildren) {
-	        this.props.onError('Cannot drop, too many children and have not implemented replace logic');
-	        return;
-	      }
 
-	      const data = this.getDropData(e);
+	        const indexOffset = getIndexOffset ? getIndexOffset(e) : 0;
+	        const path = addOffset(candidatePath, indexOffset);
+	        const data = this.getDropData(e);
 
-	      if (typeof data === 'string') {
-	        this.props.onError(data);
-	        return;
-	      }
+	        if (typeof data === 'string') {
+	          this.props.onError(data);
+	          return;
+	        }
 
-	      this.handleInsert(data, path, getDuplicate);
+	        try {
+	          const edits = getEdits(data, path, getDuplicate, childInfo);
+
+	          if (edits.length) {
+	            this.props.onChange(edits);
+	          }
+	        } catch (e) {
+	          console.log(e.message);
+	          this.props.onError(e.message);
+	        }
+	      });
 	    }), _temp;
 	  }
 
-	  getDropData(e) {
+	  get dropMappers() {
 	    const {
 	      dropMappers
 	    } = this.props;
+	    const insertMappers = Object.keys(dropMappers).reduce((acc, key) => _objectSpread({}, acc, {
+	      [key]: text => {
+	        const data = dropMappers[key](text);
+
+	        if (typeof data === 'string') {
+	          return data;
+	        }
+
+	        return _objectSpread({}, data, {
+	          dropType: 'INSERT'
+	        });
+	      }
+	    }), {});
+	    return _objectSpread({}, insertMappers, {
+	      [INTERNAL_TRANSFER_TYPE]: data => _objectSpread({}, JSON.parse(data), {
+	        dropType: 'MOVE'
+	      })
+	    });
+	  }
+
+	  setDropPath(path) {
+	    if (!path && this.state.dropPath || path && !this.state.dropPath || path && this.state.dropPath && !eq(path, this.state.dropPath)) {
+	      console.log('setdroppath');
+	      this.setState({
+	        dropPath: path
+	      });
+	    }
+	  }
+
+	  getDropData(e) {
 	    const {
 	      dataTransfer
 	    } = e;
@@ -6680,75 +7216,13 @@
 	      return 'Unable to drop';
 	    }
 
-	    const type = Object.keys(dropMappers).find(key => dataTransfer.getData(key));
+	    const type = Object.keys(this.dropMappers).find(key => dataTransfer.getData(key));
 
 	    if (!type) {
 	      return 'Unable to drop this';
 	    }
 
-	    return dropMappers[type](dataTransfer.getData(type));
-	  } // TODO: debounce me!!!
-
-
-	  handleMove(dragData, path, childInfo) {
-	    const {
-	      path: dragPath
-	    } = dragData;
-	    const {
-	      type: dragType,
-	      id
-	    } = dragPath[dragPath.length - 1];
-	    const {
-	      type
-	    } = path[path.length - 1];
-
-	    if (dragType !== type) {
-	      this.props.onError(`can't drop ${dragType} where ${type} should go`);
-	      return;
-	    }
-
-	    if (isSubPath(dragPath, path)) {
-	      this.props.onError(`can't drop into itself`);
-	      return;
-	    }
-
-	    if (isSibling(dragPath, path) && childInfo && childInfo.childrenCount >= childInfo.maxChildren) {
-	      this.props.onError('Cannot drop, too many children and have not implemented replace logic');
-	      return;
-	    }
-
-	    const movePath = pathForMove(dragPath, path);
-	    const {
-	      index
-	    } = movePath[movePath.length - 1];
-	    const edits = [hasMoved(dragPath, path) ? move(type, id, dragPath, movePath, index) : null].filter(Boolean);
-
-	    if (edits.length) {
-	      this.props.onChange(edits);
-	    }
-	  }
-
-	  handleInsert({
-	    type: dragType,
-	    id
-	  }, path, getDuplicate) {
-	    const {
-	      type,
-	      index
-	    } = path[path.length - 1];
-
-	    if (dragType !== type) {
-	      this.props.onError(`can't drop ${dragType} where ${type} should go`);
-	      return;
-	    }
-
-	    const duplicate = getDuplicate(dragType, id);
-
-	    if (duplicate) {
-	      this.handleMove(duplicate, path);
-	    } else {
-	      this.props.onChange([insert(type, id, path, index)].filter(Boolean));
-	    }
+	    return this.dropMappers[type](dataTransfer.getData(type));
 	  }
 
 	  render() {
@@ -6758,22 +7232,17 @@
 	      children
 	    } = this.props;
 	    return react.createElement("div", {
-	      onDrop: () => {
-	        this.eventHandled = false;
-	      },
 	      onDragOver: () => {
 	        if (!this.eventHandled) {
-	          this.setState({
-	            dropPath: null
-	          });
+	          this.setDropPath(null);
 	        }
 
 	        this.eventHandled = false;
 	      },
 	      onDragEnd: () => {
-	        this.setState({
-	          dropPath: null
-	        });
+	        console.l;
+	        this.eventHandled = false;
+	        this.setDropPath(null);
 	      }
 	    }, react.createElement(PathContext.Consumer, null, (_ref) => {
 	      let pathContext = _extends({}, _ref);
@@ -6800,7 +7269,8 @@
 	}
 
 	_defineProperty(Root, "defaultProps", {
-	  onError: () => {}
+	  onError: () => {},
+	  dropMappers: {}
 	});
 
 	class Children extends react.Component {
@@ -6817,7 +7287,7 @@
 	      } = this.props;
 	      return {
 	        onDragOver: handleDragOver(this.getDropPath(i), getOffsetIndex),
-	        onDrop: handleDrop(this.getDropPath(i), getDuplicate, childInfo)
+	        onDrop: handleDrop(this.getDropPath(i), getDuplicate, childInfo, getOffsetIndex)
 	      };
 	    }), _temp;
 	  }
@@ -6895,43 +7365,59 @@
 	  props: {}
 	};
 
-	const Level = ({
-	  arr,
-	  type,
-	  field = `${type}s`,
-	  getKey = ({
+	class Level extends react.Component {
+	  getDropProps(getDropProps, i, getIndexOffset) {
+	    const {
+	      arr,
+	      maxChildren
+	    } = this.props;
+	    return getDropProps(i, {
+	      childrenCount: arr.length,
+	      maxChildren
+	    });
+	  }
+
+	  renderDrop(i, getDropProps, isTarget) {
+	    const {
+	      renderDrop
+	    } = this.props;
+	    return !!renderDrop && renderDrop(this.getDropProps(getDropProps, i), isTarget(i), i);
+	  }
+
+	  render() {
+	    const {
+	      arr,
+	      type,
+	      field = `${type}s`,
+	      getKey,
+	      getDedupeKey = getKey,
+	      dedupeType,
+	      children
+	    } = this.props;
+	    const {
+	      Wrapper,
+	      props
+	    } = getDedupeWrapperAndProps(dedupeType);
+	    return react.createElement(Children$1, {
+	      type: type,
+	      field: field
+	    }, (getDropProps, isTarget) => react.createElement(Wrapper, props, arr.map((child, i) => react.createElement(react.Fragment, {
+	      key: getKey(child)
+	    }, this.renderDrop(i, getDropProps, isTarget), react.createElement(Node$1, {
+	      id: getKey(child),
+	      dedupeKey: getDedupeKey(child),
+	      index: i
+	    }, (getDragProps, getIndexOffset) => children(child, getDragProps, this.getDropProps(getDropProps, i, getIndexOffset), i)))), this.renderDrop(arr.length, getDropProps, isTarget)));
+	  }
+
+	}
+
+	_defineProperty(Level, "defaultProps", {
+	  getKey: ({
 	    id
 	  }) => id,
-	  getDedupeKey = getKey,
-	  dedupeType,
-	  renderDrop,
-	  maxChildren = Infinity,
-	  children
-	}) => {
-	  const {
-	    Wrapper,
-	    props
-	  } = getDedupeWrapperAndProps(dedupeType);
-	  return react.createElement(Children$1, {
-	    type: type,
-	    field: field
-	  }, (getDropProps, isTarget) => react.createElement(Wrapper, props, arr.map((child, i) => react.createElement(react.Fragment, {
-	    key: getKey(child)
-	  }, renderDrop && renderDrop(getDropProps(i, {
-	    childrenCount: arr.length,
-	    maxChildren
-	  }), isTarget(i), i), react.createElement(Node$1, {
-	    id: getKey(child),
-	    dedupeKey: getDedupeKey(child),
-	    index: i
-	  }, (getDragProps, getIndexOffset) => children(child, getDragProps, getDropProps(i, {
-	    childrenCount: arr.length,
-	    maxChildren
-	  }, getIndexOffset), i)))), renderDrop && renderDrop(getDropProps(arr.length, {
-	    childrenCount: arr.length,
-	    maxChildren
-	  }), isTarget(arr.length), arr.length)));
-	};
+	  maxChildren: Infinity
+	});
 
 	const DragZone = ({
 	  children,
@@ -7079,12 +7565,12 @@
 	    }]
 	  }]
 	};
-	const root = document.getElementById('root');
+	const root$1 = document.getElementById('root');
 
-	if (root) {
+	if (root$1) {
 	  reactDom.render(react.createElement(App, {
 	    front: front
-	  }), root);
+	  }), root$1);
 	}
 
 }());

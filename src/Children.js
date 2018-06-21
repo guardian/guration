@@ -58,7 +58,12 @@ class Children extends React.Component<ChildrenPropsWithContext> {
 
     return {
       onDragOver: handleDragOver(this.getDropPath(i), getOffsetIndex),
-      onDrop: handleDrop(this.getDropPath(i), getDuplicate, childInfo)
+      onDrop: handleDrop(
+        this.getDropPath(i),
+        getDuplicate,
+        childInfo,
+        getOffsetIndex
+      )
     };
   };
 

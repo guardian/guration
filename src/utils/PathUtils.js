@@ -87,4 +87,15 @@ const hasMoved = (prevPath: Path[], nextPath: Path[]) => {
   return false;
 };
 
-export { isSubPath, isSibling, pathForMove, hasMoved, eq };
+const addOffset = (candidatePath: Path[], offset: number) => {
+  const parent = candidatePath[candidatePath.length - 1];
+  return [
+    ...candidatePath.slice(0, candidatePath.length - 1),
+    {
+      ...parent,
+      index: parent.index + offset
+    }
+  ];
+};
+
+export { isSubPath, isSibling, pathForMove, hasMoved, eq, addOffset };
