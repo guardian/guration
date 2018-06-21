@@ -19,7 +19,7 @@ type LevelProps<T> = {
   arr: T[],
   type: string,
   field?: string,
-  getKey?: (child: T) => string,
+  getKey: (child: T) => string,
   getDedupeKey?: (child: T) => string,
   dedupeType?: *,
   renderDrop?: (
@@ -27,7 +27,7 @@ type LevelProps<T> = {
     isTarget: boolean,
     i: number
   ) => ReactNode,
-  maxChildren?: number,
+  maxChildren: number,
   children: (
     child: T,
     getDragProps: () => DragProps,
@@ -44,64 +44,67 @@ const getDedupeWrapperAndProps = (dedupeType: *) =>
       }
     : { Wrapper: React.Fragment, props: {} };
 
-const Level = <T: *>({
-  arr,
-  type,
-  field = `${type}s`,
-  getKey = ({ id }: { id: string }) => id,
-  getDedupeKey = getKey,
-  dedupeType,
-  renderDrop,
-  maxChildren = Infinity,
-  children
-}: LevelProps<T>) => {
-  const { Wrapper, props } = getDedupeWrapperAndProps(dedupeType);
+class Level<T: *> extends React.Component<LevelProps<T>> {
+  static defaultProps = {
+    getKey: ({ id }: { id: string }) => id,
+    maxChildren: Infinity
+  };
 
-  return (
-    <Children type={type} field={field}>
-      {(getDropProps, isTarget) => (
-        <Wrapper {...props}>
-          {arr.map((child, i) => (
-            <React.Fragment key={getKey(child)}>
-              {renderDrop &&
-                renderDrop(
-                  getDropProps(i, { childrenCount: arr.length, maxChildren }),
-                  isTarget(i),
-                  i
-                )}
-              <Node
-                id={getKey(child)}
-                dedupeKey={getDedupeKey(child)}
-                index={i}
-              >
-                {(getDragProps, getIndexOffset) =>
-                  children(
-                    child,
-                    getDragProps,
-                    getDropProps(
-                      i,
-                      { childrenCount: arr.length, maxChildren },
-                      getIndexOffset
-                    ),
-                    i
-                  )
-                }
-              </Node>
-            </React.Fragment>
-          ))}
-          {renderDrop &&
-            renderDrop(
-              getDropProps(arr.length, {
-                childrenCount: arr.length,
-                maxChildren
-              }),
-              isTarget(arr.length),
-              arr.length
-            )}
-        </Wrapper>
-      )}
-    </Children>
-  );
-};
+  getDropProps(getDropProps: *, i: number, getIndexOffset: *) {
+    const { arr, maxChildren } = this.props;
+    return getDropProps(i, { childrenCount: arr.length, maxChildren });
+  }
+
+  renderDrop(i: number, getDropProps: *, isTarget: *) {
+    const { renderDrop } = this.props;
+    return (
+      !!renderDrop &&
+      renderDrop(this.getDropProps(getDropProps, i), isTarget(i), i)
+    );
+  }
+
+  render() {
+    const {
+      arr,
+      type,
+      field = `${type}s`,
+      getKey,
+      getDedupeKey = getKey,
+      dedupeType,
+      children
+    } = this.props;
+
+    const { Wrapper, props } = getDedupeWrapperAndProps(dedupeType);
+
+    return (
+      <Children type={type} field={field}>
+        {(getDropProps, isTarget) => (
+          <Wrapper {...props}>
+            {arr.map((child, i) => (
+              <React.Fragment key={getKey(child)}>
+                {this.renderDrop(i, getDropProps, isTarget)}
+                <Node
+                  id={getKey(child)}
+                  dedupeKey={getDedupeKey(child)}
+                  index={i}
+                >
+                  {(getDragProps, getIndexOffset) =>
+                    children(
+                      child,
+                      getDragProps,
+                      this.getDropProps(getDropProps, i, getIndexOffset),
+                      i
+                    )
+                  }
+                </Node>
+              </React.Fragment>
+            ))}
+            {this.renderDrop(arr.length, getDropProps, isTarget)}
+          </Wrapper>
+        )}
+      </Children>
+    );
+  }
+}
 
 export default Level;
