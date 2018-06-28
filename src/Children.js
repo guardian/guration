@@ -8,10 +8,8 @@ import { type ChildCountSpec } from './types/Children';
 
 type ChildFunc = (
   getDropProps: (
-    i: number,
-    childInfo: ChildCountSpec,
-    getIndexOffset: ?(e: DragEvent) => number
-  ) => Object,
+    childInfo: ChildCountSpec
+  ) => (i: number, getIndexOffset: ?(e: DragEvent) => number) => Object,
   isTarget: (index: number) => boolean
 ) => ReactNode;
 
@@ -56,7 +54,10 @@ class Children extends React.Component<ChildrenPropsWithContext> {
     return [...this.path, { type, index: i, id: '@@DROP' }];
   }
 
-  getDropProps = (i: number, childInfo: ?ChildCountSpec, getOffsetIndex: *) => {
+  getDropProps = (childInfo: ?ChildCountSpec) => (
+    i: number,
+    getOffsetIndex: *
+  ) => {
     const { type, handleDragOver, handleDrop, path, getDuplicate } = this.props;
 
     return {
@@ -93,7 +94,8 @@ class Children extends React.Component<ChildrenPropsWithContext> {
         {typeof children === 'function'
           ? children(
               this.getDropProps,
-              (i: number) => canDrop && !!dropPath && eq(dropPath, this.getDropPath(i))
+              (i: number) =>
+                canDrop && !!dropPath && eq(dropPath, this.getDropPath(i))
             )
           : children}
       </PathContext.Provider>

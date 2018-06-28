@@ -6826,7 +6826,7 @@
 	  constructor(...args) {
 	    var _temp;
 
-	    return _temp = super(...args), _defineProperty(this, "el", void 0), _defineProperty(this, "getIndexOffset", ({
+	    return _temp = super(...args), _defineProperty(this, "el", void 0), _defineProperty(this, "getDropIndex", ({
 	      clientY,
 	      target
 	    }) => {
@@ -6840,7 +6840,7 @@
 	        height
 	      } = target.getBoundingClientRect();
 	      const offsetY = clientY - top;
-	      return offsetY > height / 2 ? 1 : 0;
+	      return this.props.index + offsetY > height / 2 ? 1 : 0;
 	    }), _defineProperty(this, "deregister", () => {}), _defineProperty(this, "reregister", () => {
 	      const {
 	        register,
@@ -6861,8 +6861,7 @@
 	        index
 	      } = this.props;
 	      return react.createElement(RootContext.Consumer, null, ({
-	        handleDragStart,
-	        handleDrop
+	        handleDragStart
 	      }) => react.createElement(PathContext.Provider, {
 	        value: {
 	          path: this.path,
@@ -6871,7 +6870,7 @@
 	      }, typeof children === 'function' ? children(() => ({
 	        draggable: true,
 	        onDragStart: handleDragStart(this.path, type)
-	      }), this.getIndexOffset) : children));
+	      }), this.getDropIndex) : children));
 	    }), _temp;
 	  }
 
@@ -7303,7 +7302,7 @@
 	  constructor(...args) {
 	    var _temp;
 
-	    return _temp = super(...args), _defineProperty(this, "getDropProps", (i, childInfo, getOffsetIndex) => {
+	    return _temp = super(...args), _defineProperty(this, "getDropProps", childInfo => (i, getOffsetIndex) => {
 	      const {
 	        type,
 	        handleDragOver,
@@ -7395,7 +7394,7 @@
 	};
 
 	class Level extends react.Component {
-	  getDropProps(getDropProps, i, getIndexOffset) {
+	  getDropProps(getDropProps, i) {
 	    const {
 	      arr,
 	      maxChildren
@@ -7403,7 +7402,7 @@
 	    return getDropProps(i, {
 	      childrenCount: arr.length,
 	      maxChildren
-	    }, getIndexOffset);
+	    });
 	  }
 
 	  renderDrop(i, getDropProps, isTarget) {
@@ -7421,7 +7420,9 @@
 	      getKey,
 	      getDedupeKey = getKey,
 	      dedupeType,
-	      children
+	      children,
+	      maxChildren,
+	      renderDrop
 	    } = this.props;
 	    const {
 	      Wrapper,
@@ -7430,13 +7431,20 @@
 	    return react.createElement(Children$1, {
 	      type: type,
 	      field: field
-	    }, (getDropProps, isTarget) => react.createElement(Wrapper, props, arr.map((child, i) => react.createElement(react.Fragment, {
-	      key: getKey(child)
-	    }, this.renderDrop(i, getDropProps, isTarget), react.createElement(Node$1, {
-	      id: getKey(child),
-	      dedupeKey: getDedupeKey(child),
-	      index: i
-	    }, (getDragProps, getIndexOffset) => children(child, getDragProps, this.getDropProps(getDropProps, i, getIndexOffset), i)))), this.renderDrop(arr.length, getDropProps, isTarget)));
+	    }, (_getDropProps, isTarget) => {
+	      const getDropProps = _getDropProps({
+	        childrenCount: arr.length,
+	        maxChildren
+	      });
+
+	      return react.createElement(Wrapper, props, arr.map((child, i) => react.createElement(react.Fragment, {
+	        key: getKey(child)
+	      }, !!renderDrop && renderDrop(getDropProps(i), isTarget(i), i), react.createElement(Node$1, {
+	        id: getKey(child),
+	        dedupeKey: getDedupeKey(child),
+	        index: i
+	      }, (getDragProps, getIndexOffset) => children(child, getDragProps, getDropProps(i, getIndexOffset), i)))), !!renderDrop && renderDrop(getDropProps(arr.length), isTarget(arr.length), arr.length));
+	    });
 	  }
 
 	}

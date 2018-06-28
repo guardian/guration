@@ -7,7 +7,7 @@ import { type Path } from './types/Path';
 
 type ChildFunc = (
   getDragProps: () => Object,
-  getIndexOffset: (e: DragEvent) => number
+  getDropIndex: (e: DragEvent) => number
 ) => ReactNode;
 
 type NodeProps = {
@@ -38,7 +38,7 @@ class Node extends React.Component<NodePropsWithContext> {
     return dedupeKey || id;
   }
 
-  getIndexOffset = ({ clientY, target }: DragEvent) => {
+  getDropIndex = ({ clientY, target }: DragEvent) => {
     // this should never happen!
     if (!target || !(target instanceof HTMLElement)) {
       return 0;
@@ -47,7 +47,7 @@ class Node extends React.Component<NodePropsWithContext> {
     const { top, height } = target.getBoundingClientRect();
     const offsetY = clientY - top;
 
-    return offsetY > height / 2 ? 1 : 0;
+    return this.props.index + offsetY > height / 2 ? 1 : 0;
   };
 
   deregister = () => {};
@@ -68,7 +68,7 @@ class Node extends React.Component<NodePropsWithContext> {
 
     return (
       <RootContext.Consumer>
-        {({ handleDragStart, handleDrop }) => (
+        {({ handleDragStart }) => (
           <PathContext.Provider value={{ path: this.path, type }}>
             {typeof children === 'function'
               ? children(
@@ -76,7 +76,7 @@ class Node extends React.Component<NodePropsWithContext> {
                     draggable: true,
                     onDragStart: handleDragStart(this.path, type)
                   }),
-                  this.getIndexOffset
+                  this.getDropIndex
                 )
               : children}
           </PathContext.Provider>
