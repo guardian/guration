@@ -8,6 +8,7 @@ type InsertData = {
 };
 
 type MoveData = {
+  rootKey: string,
   path: Path[],
   type: string
 };

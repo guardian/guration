@@ -22,6 +22,7 @@ type RootProps = {
   dropMappers: {
     [string]: (data: string) => InsertData | string
   },
+  rootKey: string,
   children: ReactNode
 };
 
@@ -51,7 +52,8 @@ class Root extends React.Component<RootProps, RootState> {
 
   static defaultProps = {
     onError: () => {},
-    dropMappers: {}
+    dropMappers: {},
+    rootKey: 'root'
   };
 
   runLowestOnly = (fn: () => void) => {
@@ -66,9 +68,11 @@ class Root extends React.Component<RootProps, RootState> {
     if (!e.dataTransfer) {
       return;
     }
+    const { rootKey } = this.props;
     e.dataTransfer.setData(
       INTERNAL_TRANSFER_TYPE,
       JSON.stringify({
+        rootKey,
         path,
         type
       })
@@ -78,6 +82,7 @@ class Root extends React.Component<RootProps, RootState> {
     this.setState({
       dragData: {
         dropType: 'MOVE',
+        rootKey,
         path,
         type
       }
@@ -107,10 +112,13 @@ class Root extends React.Component<RootProps, RootState> {
 
     return {
       ...insertMappers,
-      [INTERNAL_TRANSFER_TYPE]: (data): MoveDrop => ({
-        ...JSON.parse(data),
-        dropType: 'MOVE'
-      })
+      [INTERNAL_TRANSFER_TYPE]: (data): ValidDrop => {
+        const json = JSON.parse(data);
+        return {
+          ...json,
+          dropType: this.props.rootKey === json.rootKey ? 'MOVE' : 'INSERT'
+        };
+      }
     };
   }
 
@@ -224,7 +232,6 @@ class Root extends React.Component<RootProps, RootState> {
           this.props.onChange(edits);
         }
       } catch (e) {
-        console.log(e.message);
         this.props.onError(e.message);
       }
     });
