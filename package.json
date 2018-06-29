@@ -1,6 +1,6 @@
 {
   "name": "@guardian/guration",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "dist/index.js",
   "dependencies": {
     "lodash.throttle": "^4.1.1",
