@@ -1,15 +1,16 @@
 // @flow
 
 import React, { type Node as ReactNode } from 'react';
+import throttle from 'lodash.throttle';
 import { RootContext, PathContext } from './Context';
 import Node from './Node';
-import { move, insert } from './Edits';
-import { isSubPath, isSibling, pathForMove, hasMoved } from './utils/PathUtils';
+import { addOffset, eq } from './utils/PathUtils';
 import { type Path } from './types/Path';
 import { type InsertData, type MoveData } from './types/Data';
 import { type ChildCountSpec } from './types/Children';
 import { type Edit } from './Edits';
 import { type GetDuplicate } from './Dedupe';
+import { getEdits } from './utils/EditUtils';
 
 const INTERNAL_TRANSFER_TYPE = '@@TRANSFER';
 
@@ -21,37 +22,130 @@ type RootProps = {
   dropMappers: {
     [string]: (data: string) => InsertData | string
   },
+  rootKey: string,
   children: ReactNode
 };
 
-class Root extends React.Component<RootProps> {
+type InsertDrop = InsertData & { dropType: 'INSERT' };
+type MoveDrop = MoveData & { dropType: 'MOVE' };
+
+type ValidDrop = InsertDrop | MoveDrop;
+
+type RootState = {
+  dragData: ?MoveDrop,
+  dropInfo: {
+    path: ?(Path[]),
+    canDrop: boolean
+  }
+};
+
+class Root extends React.Component<RootProps, RootState> {
+  eventHandled = false;
+
+  state = {
+    dragData: null,
+    dropInfo: {
+      path: null,
+      canDrop: false
+    }
+  };
+
   static defaultProps = {
-    onError: () => {}
+    onError: () => {},
+    dropMappers: {},
+    rootKey: 'root'
+  };
+
+  runLowestOnly = (fn: () => void) => {
+    if (this.eventHandled) {
+      return;
+    }
+    this.eventHandled = true;
+    fn();
   };
 
   handleDragStart = (path: Path[], type: string) => (e: DragEvent) => {
     if (!e.dataTransfer) {
       return;
     }
+    const { rootKey } = this.props;
     e.dataTransfer.setData(
       INTERNAL_TRANSFER_TYPE,
       JSON.stringify({
+        rootKey,
         path,
         type
       })
     );
+
+    // set this as we can't inspect dataTransfer on dragover
+    this.setState({
+      dragData: {
+        dropType: 'MOVE',
+        rootKey,
+        path,
+        type
+      }
+    });
   };
 
-  getDropData(e: DragEvent) {
+  get dropMappers(): { [string]: (text: string) => ValidDrop | string } {
     const { dropMappers } = this.props;
+    const insertMappers = Object.keys(dropMappers).reduce(
+      (acc, key) => ({
+        ...acc,
+        [key]: (text: string): string | InsertDrop => {
+          const data = dropMappers[key](text);
 
+          if (typeof data === 'string') {
+            return data;
+          }
+
+          return {
+            ...data,
+            dropType: 'INSERT'
+          };
+        }
+      }),
+      {}
+    );
+
+    return {
+      ...insertMappers,
+      [INTERNAL_TRANSFER_TYPE]: (data): ValidDrop => {
+        const json = JSON.parse(data);
+        return {
+          ...json,
+          dropType: this.props.rootKey === json.rootKey ? 'MOVE' : 'INSERT'
+        };
+      }
+    };
+  }
+
+  setDropInfo(path: ?(Path[]), canDrop: boolean) {
+    const { path: dropPath } = this.state.dropInfo;
+    if (
+      (!path && dropPath) ||
+      (path && !dropPath) ||
+      (path && dropPath && !eq(path, dropPath))
+    ) {
+      this.setState({
+        dropInfo: {
+          path,
+          canDrop
+        }
+      });
+    }
+  }
+
+  getDropData(e: DragEvent): ValidDrop | string {
     const { dataTransfer } = e;
 
     if (!dataTransfer) {
       return 'Unable to drop';
     }
 
-    const type = Object.keys(dropMappers).find(key =>
+    const type = Object.keys(this.dropMappers).find(key =>
       dataTransfer.getData(key)
     );
 
@@ -59,128 +153,131 @@ class Root extends React.Component<RootProps> {
       return 'Unable to drop this';
     }
 
-    return dropMappers[type](dataTransfer.getData(type));
+    return this.dropMappers[type](dataTransfer.getData(type));
   }
 
-  handleDrop = (
-    path: Path[],
+  handleDragOver = (
+    candidatePath: Path[],
     getDuplicate: GetDuplicate,
-    childInfo: ?ChildCountSpec
+    childInfo: ?ChildCountSpec,
+    getIndexOffset: ?(e: DragEvent) => number
   ) => (e: DragEvent) => {
-    const { dataTransfer } = e;
-
-    if (!dataTransfer) {
-      return;
-    }
-
-    const moveDataStr = dataTransfer.getData(INTERNAL_TRANSFER_TYPE);
-
-    if (moveDataStr) {
-      const moveData: MoveData = JSON.parse(moveDataStr);
-      this.handleMove(moveData, path, childInfo);
-      return;
-    }
-
-    if (childInfo && childInfo.childrenCount >= childInfo.maxChildren) {
-      this.props.onError(
-        'Cannot drop, too many children and have not implemented replace logic'
+    this.runLowestOnly(() => {
+      e.preventDefault();
+      this.runDragOver(
+        candidatePath,
+        getDuplicate,
+        childInfo,
+        getIndexOffset,
+        e
       );
-      return;
-    }
-
-    const data = this.getDropData(e);
-
-    if (typeof data === 'string') {
-      this.props.onError(data);
-      return;
-    }
-
-    this.handleInsert(data, path, getDuplicate);
+    });
   };
 
-  handleMove(dragData: MoveData, path: Path[], childInfo: ?ChildCountSpec) {
-    const { path: dragPath } = dragData;
+  runDragOver = throttle(
+    (
+      candidatePath: Path[],
+      getDuplicate: GetDuplicate,
+      childInfo: ?ChildCountSpec,
+      getIndexOffset: ?(e: DragEvent) => number,
+      e: DragEvent
+    ) => {
+      const indexOffset = getIndexOffset ? getIndexOffset(e) : 0;
+      const path = addOffset(candidatePath, indexOffset);
 
-    const { type: dragType, id } = dragPath[dragPath.length - 1];
-    const { type } = path[path.length - 1];
-
-    if (dragType !== type) {
-      this.props.onError(`can't drop ${dragType} where ${type} should go`);
-      return;
+      let edits = [];
+      try {
+        edits = this.state.dragData
+          ? getEdits(this.state.dragData, path, getDuplicate, childInfo)
+          : [];
+      } catch (e) {}
+      this.setDropInfo(path, !!edits.length);
+    },
+    100,
+    {
+      trailing: false
     }
+  );
 
-    if (isSubPath(dragPath, path)) {
-      this.props.onError(`can't drop into itself`);
-      return;
-    }
+  handleDrop = (
+    candidatePath: Path[],
+    getDuplicate: GetDuplicate,
+    childInfo: ?ChildCountSpec,
+    getIndexOffset: ?(e: DragEvent) => number
+  ) => (e: DragEvent) => {
+    this.runLowestOnly(() => {
+      const { dataTransfer } = e;
 
-    if (
-      isSibling(dragPath, path) &&
-      childInfo &&
-      childInfo.childrenCount >= childInfo.maxChildren
-    ) {
-      this.props.onError(
-        'Cannot drop, too many children and have not implemented replace logic'
-      );
-      return;
-    }
+      if (!dataTransfer) {
+        return;
+      }
 
-    const movePath = pathForMove(dragPath, path);
+      // TODO: separate this logic and run it on dragover as well so that
+      // drop path can be set to null if things don't validate, meaning drop
+      // zones won't highlight
 
-    const { index } = movePath[movePath.length - 1];
+      const indexOffset = getIndexOffset ? getIndexOffset(e) : 0;
+      const path = addOffset(candidatePath, indexOffset);
 
-    const edits = [
-      hasMoved(dragPath, path)
-        ? move(type, id, dragPath, movePath, index)
-        : null
-    ].filter(Boolean);
+      const data = this.getDropData(e);
 
-    if (edits.length) {
-      this.props.onChange(edits);
-    }
-  }
+      if (typeof data === 'string') {
+        this.props.onError(data);
+        return;
+      }
 
-  handleInsert(
-    { type: dragType, id }: InsertData,
-    path: Path[],
-    getDuplicate: GetDuplicate
-  ) {
-    const { type, index } = path[path.length - 1];
-    if (dragType !== type) {
-      this.props.onError(`can't drop ${dragType} where ${type} should go`);
-      return;
-    }
-
-    const duplicate = getDuplicate(dragType, id);
-
-    if (duplicate) {
-      this.handleMove(duplicate, path);
-    } else {
-      this.props.onChange([insert(type, id, path, index)].filter(Boolean));
-    }
-  }
+      try {
+        const edits = getEdits(data, path, getDuplicate, childInfo);
+        if (edits.length) {
+          this.props.onChange(edits);
+        }
+      } catch (e) {
+        this.props.onError(e.message);
+      }
+    });
+  };
 
   render() {
     const { type, id, children } = this.props;
     return (
-      <PathContext.Consumer>
-        {({ ...pathContext }) => (
-          <PathContext.Provider value={{ ...pathContext, type }}>
-            <RootContext.Provider
-              value={{
-                handleDragStart: this.handleDragStart,
-                handleDrop: this.handleDrop
-              }}
-            >
-              <Node type={type} id={id} index={0}>
-                {children}
-              </Node>
-            </RootContext.Provider>
-          </PathContext.Provider>
-        )}
-      </PathContext.Consumer>
+      <div
+        onDrop={() => {
+          this.setDropInfo(null, false);
+        }}
+        onDragOver={() => {
+          if (!this.eventHandled) {
+            this.setDropInfo(null, false);
+          }
+          this.eventHandled = false;
+        }}
+        onDragEnd={() => {
+          this.eventHandled = false;
+          this.setDropInfo(null, false);
+        }}
+      >
+        <PathContext.Consumer>
+          {({ ...pathContext }) => (
+            <PathContext.Provider value={{ ...pathContext, type }}>
+              <RootContext.Provider
+                value={{
+                  handleDragStart: this.handleDragStart,
+                  handleDrop: this.handleDrop,
+                  handleDragOver: this.handleDragOver,
+                  dropInfo: this.state.dropInfo
+                }}
+              >
+                <Node type={type} id={id} index={0}>
+                  {children}
+                </Node>
+              </RootContext.Provider>
+            </PathContext.Provider>
+          )}
+        </PathContext.Consumer>
+      </div>
     );
   }
 }
+
+export type { ValidDrop };
 
 export default Root;

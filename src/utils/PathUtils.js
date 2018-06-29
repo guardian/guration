@@ -2,21 +2,27 @@
 
 import { type Path } from '../types/Path';
 
+const elEq = (a: Path, b: Path, checkChildren = false) => {
+  const { index: i1, type: t1, childrenField: c1 } = a;
+  const { index: i2, type: t2, childrenField: c2 } = b;
+
+  // we're still a sub path if the we're on the last and it doesn't have a
+  // childrenField
+  return (
+    (!isNaN(i1) && i1 === i2) &&
+    (t1 && t1 === t2) &&
+    (c1 === c2 || !checkChildren)
+  );
+};
+
+const eq = (a: Path[], b: Path[]) =>
+  a.length === b.length &&
+  a.every((el, i) => elEq(el, b[i], i !== a.length - 1));
+
 const isSubPath = (path: Path[], candidate: Path[]): boolean =>
   candidate.length > path.length &&
   !!path.length &&
-  !path.some((el, i) => {
-    const { index: i1, type: t1, childrenField: c1 } = el;
-    const { index: i2, type: t2, childrenField: c2 } = candidate[i];
-
-    // we're still a sub path if the we're on the last and it doesn't have a
-    // childrenField
-    return (
-      (!isNaN(i1) && i1 !== i2) ||
-      (t1 && t1 !== t2) ||
-      (c1 !== c2 && i !== path.length - 1)
-    );
-  });
+  path.every((el, i) => elEq(el, candidate[i], i !== path.length - 1));
 
 const isSibling = (path: Path[], candidate: Path[]): boolean =>
   candidate.length === path.length &&
@@ -81,4 +87,15 @@ const hasMoved = (prevPath: Path[], nextPath: Path[]) => {
   return false;
 };
 
-export { isSubPath, isSibling, pathForMove, hasMoved };
+const addOffset = (candidatePath: Path[], offset: number) => {
+  const parent = candidatePath[candidatePath.length - 1];
+  return [
+    ...candidatePath.slice(0, candidatePath.length - 1),
+    {
+      ...parent,
+      index: parent.index + offset
+    }
+  ];
+};
+
+export { isSubPath, isSibling, pathForMove, hasMoved, eq, addOffset };

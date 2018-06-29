@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "dist/index.js",
   "dependencies": {
-    "lodash": "^4.17.10",
+    "lodash.throttle": "^4.1.1",
     "react": "^16.3.0",
     "react-dom": "^16.3.0"
   },
@@ -30,6 +30,7 @@
     "babel-core": "^7.0.0-0",
     "babel-jest": "^23.0.1",
     "flow-bin": "^0.72.0",
+    "flow-typed": "^2.4.0",
     "http-server": "^0.11.1",
     "jest": "^23.1.0",
     "mkdirp": "^0.5.1",
@@ -43,7 +44,6 @@
     "rollup-plugin-replace": "^2.0.0"
   },
   "peerDependencies": {
-    "lodash": "^4.17.10",
     "react": "^16.3.0",
     "react-dom": "^16.3.0"
   }

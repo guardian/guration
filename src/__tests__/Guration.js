@@ -42,7 +42,7 @@ describe('Guration', () => {
     TestRenderer.create(
       <Root type="@@ROOT" id="@@ROOT" onChange={e => (edit = e)}>
         <Level arr={[{ id: 1 }, { id: 2 }]} type="a">
-          {(child, getDragProps, i) => {
+          {(child, getDragProps, getDropProps, i) => {
             if (i === 0) {
               dragProps = getDragProps();
             }
@@ -52,7 +52,7 @@ describe('Guration', () => {
                 arr={[{ id: 1 }, { id: 2 }]}
                 field="children"
                 type="a"
-                renderDrop={(_dropProps, i) => {
+                renderDrop={(_dropProps, isTarget, i) => {
                   if (i === 1) {
                     dropProps = _dropProps;
                   }
@@ -143,7 +143,7 @@ describe('Guration', () => {
               arr={[{ id: 2 }, { id: 3 }, { id: 4 }]}
               field="children2"
               type="a"
-              renderDrop={(_dropProps, i) => {
+              renderDrop={(_dropProps, isTarget, i) => {
                 if (i === 1) {
                   dropProps = _dropProps;
                 }
@@ -258,7 +258,7 @@ describe('Guration', () => {
             dropProps = _dropProps;
           }}
         >
-          {(child, getDragProps, i) => {
+          {(child, getDragProps, getDropProps, i) => {
             if (i === 0) {
               dragProps = getDragProps();
             }
@@ -334,5 +334,67 @@ describe('Guration', () => {
     })(dropProps);
 
     expect(error).toBeTruthy();
+  });
+
+  it('creates moves between roots with the same key', () => {
+    let dragProps;
+    let dropProps;
+    let edits;
+
+    TestRenderer.create(
+      <div>
+        <Root type="@@ROOT" id="@@ROOT">
+          <Level type="a" arr={[{ id: 1 }]}>
+            {(child, getDragProps) => {dragProps = getDragProps()}}
+          </Level>
+        </Root>
+        <Root type="@@ROOT" id="@@ROOT" onChange={e => (edits = e)}>
+          <Level
+            type="a"
+            arr={[{ id: 1 }, { id: 2 }]}
+            renderDrop={props => {
+              dropProps = props;
+            }}
+          >
+            {child => null}
+          </Level>
+        </Root>
+      </div>
+    );
+
+    runDrag(dragProps)(dropProps);
+
+    expect(edits[0].type).toBe('MOVE');
+  });
+
+  it('creates inserts between roots with a different key', () => {
+    let dragProps;
+    let dropProps;
+    let edits;
+
+    TestRenderer.create(
+      <div>
+        <Root type="@@ROOT" id="@@ROOT" rootKey="a">
+          <Level type="a" arr={[{ id: 1 }]}>
+            {(child, getDragProps) => {dragProps = getDragProps()}}
+          </Level>
+        </Root>
+        <Root type="@@ROOT" id="@@ROOT" rootKey="b" onChange={e => (edits = e)}>
+          <Level
+            type="a"
+            arr={[{ id: 1 }, { id: 2 }]}
+            renderDrop={props => {
+              dropProps = props;
+            }}
+          >
+            {child => null}
+          </Level>
+        </Root>
+      </div>
+    );
+
+    runDrag(dragProps)(dropProps);
+
+    expect(edits[0].type).toBe('INSERT');
   });
 });

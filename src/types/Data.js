@@ -8,8 +8,9 @@ type InsertData = {
 };
 
 type MoveData = {
+  rootKey: string,
   path: Path[],
-  index: number
+  type: string
 };
 
 export type { InsertData, MoveData };
