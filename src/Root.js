@@ -69,11 +69,13 @@ class Root extends React.Component<RootProps, RootState> {
       return;
     }
     const { rootKey } = this.props;
+    const { id } = path[path.length - 1];
     e.dataTransfer.setData(
       INTERNAL_TRANSFER_TYPE,
       JSON.stringify({
         rootKey,
         path,
+        id, // set this for moving between roots
         type
       })
     );
