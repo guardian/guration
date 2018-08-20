@@ -7023,6 +7023,146 @@
 	  })];
 	};
 
+	class Children extends react.Component {
+	  constructor(...args) {
+	    var _temp;
+
+	    return _temp = super(...args), _defineProperty(this, "getDropProps", childInfo => (i, getOffsetIndex) => {
+	      const {
+	        type,
+	        handleDragOver,
+	        handleDrop,
+	        path,
+	        getDuplicate
+	      } = this.props;
+	      return {
+	        onDragOver: handleDragOver(this.getDropPath(i), getDuplicate, childInfo, getOffsetIndex),
+	        onDrop: handleDrop(this.getDropPath(i), getDuplicate, childInfo, getOffsetIndex)
+	      };
+	    }), _temp;
+	  }
+
+	  get field() {
+	    return this.props.field || `${this.props.type}s`;
+	  }
+
+	  get path() {
+	    const {
+	      field
+	    } = this;
+	    const {
+	      path
+	    } = this.props;
+	    const parent = path[path.length - 1];
+	    return [...path.slice(0, path.length - 1), _objectSpread({}, parent, {
+	      childrenField: field
+	    })];
+	  }
+
+	  getDropPath(i) {
+	    const {
+	      type
+	    } = this.props;
+	    return [...this.path, {
+	      type,
+	      index: i,
+	      id: '@@DROP'
+	    }];
+	  }
+
+	  render() {
+	    const {
+	      path
+	    } = this;
+	    const {
+	      type,
+	      children,
+	      dropInfo: {
+	        path: dropPath,
+	        canDrop
+	      }
+	    } = this.props;
+	    return react.createElement(PathContext.Provider, {
+	      value: {
+	        path,
+	        type
+	      }
+	    }, typeof children === 'function' ? children(this.getDropProps, i => canDrop && !!dropPath && eq(dropPath, this.getDropPath(i))) : children);
+	  }
+
+	}
+
+	var Children$1 = (props => react.createElement(RootContext.Consumer, null, ({
+	  handleDrop,
+	  handleDragOver,
+	  dropInfo
+	}) => react.createElement(PathContext.Consumer, null, ({
+	  path
+	}) => react.createElement(DedupeContext.Consumer, null, ({
+	  getDuplicate
+	}) => react.createElement(Children, _extends({}, props, {
+	  handleDragOver: handleDragOver,
+	  handleDrop: handleDrop,
+	  dropInfo: dropInfo,
+	  path: path,
+	  getDuplicate: getDuplicate
+	}))))));
+
+	const getDedupeWrapperAndProps = dedupeType => dedupeType ? {
+	  Wrapper: Dedupe,
+	  props: {
+	    type: dedupeType
+	  }
+	} : {
+	  Wrapper: react.Fragment,
+	  props: {}
+	};
+
+	class Level extends react.Component {
+	  render() {
+	    const {
+	      arr,
+	      type,
+	      field = `${type}s`,
+	      getKey,
+	      getDedupeKey = getKey,
+	      dedupeType,
+	      children,
+	      maxChildren,
+	      renderDrop
+	    } = this.props;
+	    const {
+	      Wrapper,
+	      props
+	    } = getDedupeWrapperAndProps(dedupeType);
+	    return react.createElement(Children$1, {
+	      type: type,
+	      field: field
+	    }, (_getDropProps, isTarget) => {
+	      const getDropProps = _getDropProps({
+	        childrenCount: arr.length,
+	        maxChildren
+	      });
+
+	      return react.createElement(Wrapper, props, arr.map((child, i) => react.createElement(react.Fragment, {
+	        key: getKey(child)
+	      }, !!renderDrop && renderDrop(getDropProps(i), isTarget(i), i), react.createElement(Node$1, {
+	        id: getKey(child),
+	        dedupeKey: getDedupeKey(child),
+	        index: i
+	      }, (getDragProps, getIndexOffset) => children(child, getDragProps, getDropProps(i, getIndexOffset), i)))), !!renderDrop && renderDrop(getDropProps(arr.length), isTarget(arr.length), arr.length));
+	    });
+	  }
+
+	}
+
+	_defineProperty(Level, "defaultProps", {
+	  getKey: ({
+	    id
+	  }) => id,
+	  maxChildren: Infinity
+	});
+
 	const move = (type, id, dragPath, path, newIndex) => ({
 	  type: 'MOVE',
 	  payload: {
@@ -7126,7 +7266,11 @@
 	        return;
 	      }
 
+	      const {
+	        rootKey
+	      } = this.props;
 	      e.dataTransfer.setData(INTERNAL_TRANSFER_TYPE, JSON.stringify({
+	        rootKey,
 	        path,
 	        type
 	      })); // set this as we can't inspect dataTransfer on dragover
@@ -7134,6 +7278,7 @@
 	      this.setState({
 	        dragData: {
 	          dropType: 'MOVE',
+	          rootKey,
 	          path,
 	          type
 	        }
@@ -7184,7 +7329,6 @@
 	            this.props.onChange(edits);
 	          }
 	        } catch (e) {
-	          console.log(e.message);
 	          this.props.onError(e.message);
 	        }
 	      });
@@ -7209,9 +7353,12 @@
 	      }
 	    }), {});
 	    return _objectSpread({}, insertMappers, {
-	      [INTERNAL_TRANSFER_TYPE]: data => _objectSpread({}, JSON.parse(data), {
-	        dropType: 'MOVE'
-	      })
+	      [INTERNAL_TRANSFER_TYPE]: data => {
+	        const json = JSON.parse(data);
+	        return _objectSpread({}, json, {
+	          dropType: this.props.rootKey === json.rootKey ? 'MOVE' : 'INSERT'
+	        });
+	      }
 	    });
 	  }
 
@@ -7252,6 +7399,7 @@
 	    const {
 	      type,
 	      id,
+	      dedupeType,
 	      children
 	    } = this.props;
 	    return react.createElement("div", {
@@ -7269,191 +7417,31 @@
 	        this.eventHandled = false;
 	        this.setDropInfo(null, false);
 	      }
-	    }, react.createElement(PathContext.Consumer, null, (_ref) => {
-	      let pathContext = _extends({}, _ref);
-
-	      return react.createElement(PathContext.Provider, {
-	        value: _objectSpread({}, pathContext, {
-	          type
-	        })
-	      }, react.createElement(RootContext.Provider, {
-	        value: {
-	          handleDragStart: this.handleDragStart,
-	          handleDrop: this.handleDrop,
-	          handleDragOver: this.handleDragOver,
-	          dropInfo: this.state.dropInfo
-	        }
-	      }, react.createElement(Node$1, {
-	        type: type,
-	        id: id,
-	        index: 0
-	      }, children)));
-	    }));
+	    }, react.createElement(RootContext.Provider, {
+	      value: {
+	        handleDragStart: this.handleDragStart,
+	        handleDrop: this.handleDrop,
+	        handleDragOver: this.handleDragOver,
+	        dropInfo: this.state.dropInfo
+	      }
+	    }, react.createElement(Level, {
+	      arr: [{
+	        id
+	      }],
+	      dedupeType: dedupeType,
+	      getKey: ({
+	        id
+	      }) => id,
+	      type: type
+	    }, () => children)));
 	  }
 
 	}
 
 	_defineProperty(Root, "defaultProps", {
 	  onError: () => {},
-	  dropMappers: {}
-	});
-
-	class Children extends react.Component {
-	  constructor(...args) {
-	    var _temp;
-
-	    return _temp = super(...args), _defineProperty(this, "getDropProps", childInfo => (i, getOffsetIndex) => {
-	      const {
-	        type,
-	        handleDragOver,
-	        handleDrop,
-	        path,
-	        getDuplicate
-	      } = this.props;
-	      return {
-	        onDragOver: handleDragOver(this.getDropPath(i), getDuplicate, childInfo, getOffsetIndex),
-	        onDrop: handleDrop(this.getDropPath(i), getDuplicate, childInfo, getOffsetIndex)
-	      };
-	    }), _temp;
-	  }
-
-	  get field() {
-	    return this.props.field || `${this.props.type}s`;
-	  }
-
-	  get path() {
-	    const {
-	      field
-	    } = this;
-	    const {
-	      path
-	    } = this.props;
-	    const parent = path[path.length - 1];
-	    return [...path.slice(0, path.length - 1), _objectSpread({}, parent, {
-	      childrenField: field
-	    })];
-	  }
-
-	  getDropPath(i) {
-	    const {
-	      type
-	    } = this.props;
-	    return [...this.path, {
-	      type,
-	      index: i,
-	      id: '@@DROP'
-	    }];
-	  }
-
-	  render() {
-	    const {
-	      path
-	    } = this;
-	    const {
-	      type,
-	      children,
-	      dropInfo: {
-	        path: dropPath,
-	        canDrop
-	      }
-	    } = this.props;
-	    return react.createElement(PathContext.Provider, {
-	      value: {
-	        path,
-	        type
-	      }
-	    }, typeof children === 'function' ? children(this.getDropProps, i => canDrop && !!dropPath && eq(dropPath, this.getDropPath(i))) : children);
-	  }
-
-	}
-
-	var Children$1 = (props => react.createElement(RootContext.Consumer, null, ({
-	  handleDrop,
-	  handleDragOver,
-	  dropInfo
-	}) => react.createElement(PathContext.Consumer, null, ({
-	  path
-	}) => react.createElement(DedupeContext.Consumer, null, ({
-	  getDuplicate
-	}) => react.createElement(Children, _extends({}, props, {
-	  handleDragOver: handleDragOver,
-	  handleDrop: handleDrop,
-	  dropInfo: dropInfo,
-	  path: path,
-	  getDuplicate: getDuplicate
-	}))))));
-
-	const getDedupeWrapperAndProps = dedupeType => dedupeType ? {
-	  Wrapper: Dedupe,
-	  props: {
-	    type: dedupeType
-	  }
-	} : {
-	  Wrapper: react.Fragment,
-	  props: {}
-	};
-
-	class Level extends react.Component {
-	  getDropProps(getDropProps, i) {
-	    const {
-	      arr,
-	      maxChildren
-	    } = this.props;
-	    return getDropProps(i, {
-	      childrenCount: arr.length,
-	      maxChildren
-	    });
-	  }
-
-	  renderDrop(i, getDropProps, isTarget) {
-	    const {
-	      renderDrop
-	    } = this.props;
-	    return !!renderDrop && renderDrop(this.getDropProps(getDropProps, i), isTarget(i), i);
-	  }
-
-	  render() {
-	    const {
-	      arr,
-	      type,
-	      field = `${type}s`,
-	      getKey,
-	      getDedupeKey = getKey,
-	      dedupeType,
-	      children,
-	      maxChildren,
-	      renderDrop
-	    } = this.props;
-	    const {
-	      Wrapper,
-	      props
-	    } = getDedupeWrapperAndProps(dedupeType);
-	    return react.createElement(Children$1, {
-	      type: type,
-	      field: field
-	    }, (_getDropProps, isTarget) => {
-	      const getDropProps = _getDropProps({
-	        childrenCount: arr.length,
-	        maxChildren
-	      });
-
-	      return react.createElement(Wrapper, props, arr.map((child, i) => react.createElement(react.Fragment, {
-	        key: getKey(child)
-	      }, !!renderDrop && renderDrop(getDropProps(i), isTarget(i), i), react.createElement(Node$1, {
-	        id: getKey(child),
-	        dedupeKey: getDedupeKey(child),
-	        index: i
-	      }, (getDragProps, getIndexOffset) => children(child, getDragProps, getDropProps(i, getIndexOffset), i)))), !!renderDrop && renderDrop(getDropProps(arr.length), isTarget(arr.length), arr.length));
-	    });
-	  }
-
-	}
-
-	_defineProperty(Level, "defaultProps", {
-	  getKey: ({
-	    id
-	  }) => id,
-	  maxChildren: Infinity
+	  dropMappers: {},
+	  rootKey: 'root'
 	});
 
 	const DragZone = ({

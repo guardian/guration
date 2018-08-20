@@ -2,8 +2,9 @@
 
 import React, { type Node as ReactNode } from 'react';
 import throttle from 'lodash.throttle';
-import { RootContext, PathContext } from './Context';
+import { RootContext } from './Context';
 import Node from './Node';
+import Level from './Level';
 import { addOffset, eq } from './utils/PathUtils';
 import { type Path } from './types/Path';
 import { type InsertData, type MoveData } from './types/Data';
@@ -17,6 +18,7 @@ const INTERNAL_TRANSFER_TYPE = '@@TRANSFER';
 type RootProps = {
   type: string,
   id: string,
+  dedupeType?: string,
   onChange: (edits: Edit[]) => void,
   onError: (error: string) => void,
   dropMappers: {
@@ -240,7 +242,7 @@ class Root extends React.Component<RootProps, RootState> {
   };
 
   render() {
-    const { type, id, children } = this.props;
+    const { type, id, dedupeType, children } = this.props;
     return (
       <div
         onDrop={() => {
@@ -257,24 +259,23 @@ class Root extends React.Component<RootProps, RootState> {
           this.setDropInfo(null, false);
         }}
       >
-        <PathContext.Consumer>
-          {({ ...pathContext }) => (
-            <PathContext.Provider value={{ ...pathContext, type }}>
-              <RootContext.Provider
-                value={{
-                  handleDragStart: this.handleDragStart,
-                  handleDrop: this.handleDrop,
-                  handleDragOver: this.handleDragOver,
-                  dropInfo: this.state.dropInfo
-                }}
-              >
-                <Node type={type} id={id} index={0}>
-                  {children}
-                </Node>
-              </RootContext.Provider>
-            </PathContext.Provider>
-          )}
-        </PathContext.Consumer>
+        <RootContext.Provider
+          value={{
+            handleDragStart: this.handleDragStart,
+            handleDrop: this.handleDrop,
+            handleDragOver: this.handleDragOver,
+            dropInfo: this.state.dropInfo
+          }}
+        >
+          <Level
+            arr={[{ id }]}
+            dedupeType={dedupeType}
+            getKey={({ id }) => id}
+            type={type}
+          >
+            {() => children}
+          </Level>
+        </RootContext.Provider>
       </div>
     );
   }
