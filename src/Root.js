@@ -2,6 +2,7 @@
 
 import React, { type Node as ReactNode } from 'react';
 import throttle from 'lodash.throttle';
+import v4 from 'uuid/v4';
 import { RootContext, PathContext } from './Context';
 import Node from './Node';
 import { addOffset, eq } from './utils/PathUtils';
@@ -40,6 +41,8 @@ type RootState = {
 };
 
 class Root extends React.Component<RootProps, RootState> {
+  rootKey: string;
+
   eventHandled = false;
 
   state = {
@@ -52,9 +55,13 @@ class Root extends React.Component<RootProps, RootState> {
 
   static defaultProps = {
     onError: () => {},
-    dropMappers: {},
-    rootKey: 'root'
+    dropMappers: {}
   };
+
+  constructor(props: RootProps) {
+    super(props);
+    this.rootKey = v4();
+  }
 
   runLowestOnly = (fn: () => void) => {
     if (this.eventHandled) {
@@ -68,7 +75,7 @@ class Root extends React.Component<RootProps, RootState> {
     if (!e.dataTransfer) {
       return;
     }
-    const { rootKey } = this.props;
+    const { rootKey } = this;
     const { id } = path[path.length - 1];
     e.dataTransfer.setData(
       INTERNAL_TRANSFER_TYPE,
@@ -118,7 +125,7 @@ class Root extends React.Component<RootProps, RootState> {
         const json = JSON.parse(data);
         return {
           ...json,
-          dropType: this.props.rootKey === json.rootKey ? 'MOVE' : 'INSERT'
+          dropType: this.rootKey === json.rootKey ? 'MOVE' : 'INSERT'
         };
       }
     };

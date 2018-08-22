@@ -29,7 +29,9 @@ export default examples.map(example => ({
     replace({
       'process.env.NODE_ENV': JSON.stringify('production')
     }),
-    resolve(),
+    resolve({
+      browser: true
+    }),
     commonjs({
       include: 'node_modules/**'
     })
