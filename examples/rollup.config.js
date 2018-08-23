@@ -20,7 +20,7 @@ export default examples.map(example => ({
   plugins: [
     babel({
       babelrc: false,
-      presets: ['@babel/react', '@babel/flow'],
+      presets: ['@babel/react'],
       plugins: [
         '@babel/proposal-class-properties',
         '@babel/proposal-object-rest-spread'

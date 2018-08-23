@@ -60,6 +60,3 @@ const Front = ({ front }) => (
 
 ## How it works
 Behind the scenes the `Root` component will handle the drag and drop events, validate them and then pass out and 'edits' that arise from valid drag and drops. It's a completely controlled component and carries no state. If the consumer doesn't update its state based on these edits then nothing will happen. It just validates.
-
-## Flow
-This package ships with flow types, in order to use them you will need to make sure your .flowconfig isn't ignoring `node_modules`. This may require black listing specifc `node_modules` that don't play nicely with Flow :(
