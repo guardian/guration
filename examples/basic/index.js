@@ -7078,7 +7078,7 @@
 	      }
 	    }, getDuplicate => children(item, () => _objectSpread({
 	      draggable: true,
-	      onDragStart: handleDragStart(path, id, type)
+	      onDragStart: handleDragStart(item, path, id, type)
 	    }, handleDrop ? {
 	      onDrop: handleDrop(path, getDuplicate, getDropIndexOffset),
 	      onDragOver: handleDragOver(path, getDuplicate, getDropIndexOffset)
@@ -7284,8 +7284,14 @@
 	  }
 	}), {});
 
-	const internalDropMapper = data => _objectSpread({}, JSON.parse(data), {
+	const internalMapIn = data => _objectSpread({}, JSON.parse(data), {
 	  dropType: 'INTERNAL'
+	});
+
+	const internalMapOut = (item, path, id, type) => JSON.stringify({
+	  id,
+	  type,
+	  path
 	});
 
 	class Root extends react.Component {
@@ -7307,13 +7313,11 @@
 	    }), _defineProperty(this, "handleRootDrop", () => {
 	      this.setDropInfo(null, false);
 	      this.eventHandled = false;
-	    }), _defineProperty(this, "handleNodeDragStart", (path, id, type) => e => this.runLowest(() => {
-	      e.dataTransfer.setData(this.rootKey, JSON.stringify({
-	        rootKey: this.rootKey,
-	        id,
-	        type,
-	        path
-	      }));
+	    }), _defineProperty(this, "handleNodeDragStart", (item, path, id, type) => e => this.runLowest(() => {
+	      Object.keys(this.mapOut).forEach(key => {
+	        const mapper = this.mapOut[key];
+	        e.dataTransfer.setData(key, mapper(item, path, id, type));
+	      });
 	      this.setState({
 	        dragData: {
 	          dropType: 'INTERNAL',
@@ -7425,7 +7429,18 @@
 	   */
 	  get mapIn() {
 	    return _objectSpread({}, sanitizeExternalDrops(this.props.mapIn), {
-	      [this.rootKey]: internalDropMapper
+	      [this.rootKey]: internalMapIn
+	    });
+	  }
+	  /**
+	   * All of the functions that map a node to a drag, the key being the
+	   * key on the `dataTransfer` object that this mapper will create
+	   */
+
+
+	  get mapOut() {
+	    return _objectSpread({}, this.props.mapOut, {
+	      [this.rootKey]: internalMapOut
 	    });
 	  } // TODO: add mapOut
 
@@ -7472,6 +7487,7 @@
 
 	_defineProperty(Root, "defaultProps", {
 	  mapIn: {},
+	  mapOut: {},
 	  onError: () => {}
 	});
 

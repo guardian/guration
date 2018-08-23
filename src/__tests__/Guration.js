@@ -16,7 +16,7 @@ const createDragEvent = () => {
   };
 };
 
-const runDrag = (type, data, json = true) => dropProps => inst => {
+const runDrag = (type, data, json = true) => (dropProps, inst) => {
   const e = createDragEvent();
 
   if (typeof type === 'string') {
@@ -27,7 +27,7 @@ const runDrag = (type, data, json = true) => dropProps => inst => {
   }
 
   // simulate event bubbling
-  inst.eventHandled = false;
+  inst && (inst.eventHandled = false);
 
   dropProps.onDrop(e);
 };
@@ -65,7 +65,7 @@ describe('Guration', () => {
       </Root>
     ).getInstance();
 
-    runDrag(nodeProps)(dropProps)(inst);
+    runDrag(nodeProps)(dropProps, inst);
 
     expect(edit[0].type).toEqual('MOVE');
   });
@@ -103,7 +103,7 @@ describe('Guration', () => {
     runDrag('text', {
       type: 'a',
       id: 2
-    })(dropProps)(inst);
+    })(dropProps, inst);
 
     expect(edit[0]).toEqual({
       type: 'INSERT',
@@ -158,7 +158,7 @@ describe('Guration', () => {
     runDrag('text', {
       type: 'a',
       id: 4
-    })(dropProps)(inst);
+    })(dropProps, inst);
 
     expect(edit[0]).toEqual({
       payload: {
@@ -208,7 +208,7 @@ describe('Guration', () => {
       </Root>
     ).getInstance();
 
-    runDrag(dragProps)(dropProps)(inst);
+    runDrag(dragProps)(dropProps, inst);
 
     expect(error).toBeTruthy();
   });
@@ -239,7 +239,7 @@ describe('Guration', () => {
       </Root>
     ).getInstance();
 
-    runDrag(dragProps)(dropProps)(inst);
+    runDrag(dragProps)(dropProps, inst);
 
     expect(error).toBeTruthy();
   });
@@ -269,7 +269,7 @@ describe('Guration', () => {
       </Root>
     ).getInstance();
 
-    runDrag(dragProps)(dropProps)(inst);
+    runDrag(dragProps)(dropProps, inst);
 
     expect(edit[0].payload.to.index).toBe(2);
   });
@@ -297,7 +297,7 @@ describe('Guration', () => {
       </Root>
     ).getInstance();
 
-    runDrag(dragProps)(dropProps)(inst);
+    runDrag(dragProps)(dropProps, inst);
 
     expect(edit).toBe(undefined);
   });
@@ -334,43 +334,53 @@ describe('Guration', () => {
   //     runDrag('text', {
   //       type: 'a',
   //       id: 2
-  //     })(dropProps)(inst);
+  //     })(dropProps, inst);
 
   //     expect(error).toBeTruthy();
   //   });
 
-  // TODO: implement outMap
-  // it('creates inserts between roots', () => {
-  //   let nodeProps;
-  //   let dropProps;
-  //   let edits;
+  it('creates inserts between roots', () => {
+    let nodeProps;
+    let dropProps;
+    let edits;
 
-  //   const inst = TestRenderer.create(
-  //     <div>
-  //       <Root type="@@ROOT" id="@@ROOT">
-  //         <Level type="a" arr={[{ id: 1 }]}>
-  //           {(child, getNodeProps) => {
-  //             nodeProps = getNodeProps();
-  //             return null;
-  //           }}
-  //         </Level>
-  //       </Root>
-  //       <Root type="@@ROOT" id="@@ROOT" onChange={e => (edits = e)}>
-  //         <Level
-  //           type="a"
-  //           arr={[{ id: 1 }, { id: 2 }]}
-  //           renderDrop={getDropProps => {
-  //             dropProps = getDropProps();
-  //           }}
-  //         >
-  //           {child => null}
-  //         </Level>
-  //       </Root>
-  //     </div>
-  //   ).getInstance();
+    const inst = TestRenderer.create(
+      <div>
+        <Root
+          type="@@ROOT"
+          id="@@ROOT"
+          mapOut={{
+            share: () => 'test'
+          }}
+        >
+          <Level type="a" arr={[{ id: 1 }]}>
+            {(child, getNodeProps) => {
+              nodeProps = getNodeProps();
+              return null;
+            }}
+          </Level>
+        </Root>
+        <Root
+          type="@@ROOT"
+          id="@@ROOT"
+          mapIn={{ share: text => ({ id: text, type: 'a' }) }}
+          onChange={e => (edits = e)}
+        >
+          <Level
+            type="a"
+            arr={[{ id: 1 }, { id: 2 }]}
+            renderDrop={getDropProps => {
+              dropProps = getDropProps();
+            }}
+          >
+            {child => null}
+          </Level>
+        </Root>
+      </div>
+    ).getInstance();
 
-  //   runDrag(nodeProps)(dropProps)(inst);
+    runDrag(nodeProps)(dropProps);
 
-  //   expect(edits[0].type).toBe('INSERT');
-  // });
+    expect(edits[0].type).toBe('INSERT');
+  });
 });

@@ -29,9 +29,15 @@ const sanitizeExternalDrops = mappers =>
     {}
   );
 
-const internalDropMapper = data => ({
+const internalMapIn = data => ({
   ...JSON.parse(data),
   dropType: 'INTERNAL'
+});
+
+const internalMapOut = (item, path, id, type) => JSON.stringify({
+  id,
+  type,
+  path
 });
 
 class Root extends React.Component {
@@ -47,6 +53,7 @@ class Root extends React.Component {
 
   static defaultProps = {
     mapIn: {},
+    mapOut: {},
     onError: () => {}
   };
 
@@ -107,17 +114,12 @@ class Root extends React.Component {
    * being dragged from and what type they are to allows us to show invalid
    * drops in the UI while dragging
    */
-  handleNodeDragStart = (path, id, type) => e =>
+  handleNodeDragStart = (item, path, id, type) => e =>
     this.runLowest(() => {
-      e.dataTransfer.setData(
-        this.rootKey,
-        JSON.stringify({
-          rootKey: this.rootKey,
-          id,
-          type,
-          path
-        })
-      );
+      Object.keys(this.mapOut).forEach(key => {
+        const mapper = this.mapOut[key];
+        e.dataTransfer.setData(key, mapper(item, path, id, type))
+      });
 
       this.setState({
         dragData: {
@@ -221,7 +223,18 @@ class Root extends React.Component {
   get mapIn() {
     return {
       ...sanitizeExternalDrops(this.props.mapIn),
-      [this.rootKey]: internalDropMapper
+      [this.rootKey]: internalMapIn
+    };
+  }
+
+  /**
+   * All of the functions that map a node to a drag, the key being the
+   * key on the `dataTransfer` object that this mapper will create
+   */
+  get mapOut() {
+    return {
+      ...this.props.mapOut,
+      [this.rootKey]: internalMapOut
     };
   }
 

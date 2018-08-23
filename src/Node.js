@@ -36,7 +36,7 @@ class Node extends React.Component {
                 item,
                 () => ({
                   draggable: true,
-                  onDragStart: handleDragStart(path, id, type),
+                  onDragStart: handleDragStart(item, path, id, type),
                   ...(handleDrop
                     ? {
                         onDrop: handleDrop(
