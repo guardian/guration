@@ -7598,7 +7598,7 @@
 	  type: "front",
 	  onChange: console.log,
 	  onError: console.log,
-	  dropMappers: {
+	  mapIn: {
 	    json: json()
 	  }
 	}, react.createElement(Level, {
