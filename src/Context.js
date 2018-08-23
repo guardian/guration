@@ -1,38 +1,15 @@
-// @flow
+import { createContext } from 'react';
 
-import React from 'react';
-import { type Path } from './types/Path';
-import { type MoveData } from './types/Data';
-import { type ChildCountSpec } from './types/Children';
-import { type GetDuplicate } from './Dedupe';
-
-const RootContext = React.createContext({
-  handleDragStart: (path: Path[], type: string) => (e: DragEvent) => {},
-  handleDragOver: (
-    path: Path[],
-    getDuplicate: GetDuplicate,
-    childInfo: ?ChildCountSpec,
-    getIndexOffset: ?(e: DragEvent) => number
-  ) => (e: DragEvent) => {},
-  handleDrop: (
-    path: Path[],
-    getDuplicate: GetDuplicate,
-    childInfo: ?ChildCountSpec,
-    getIndexOffset: ?(e: DragEvent) => number
-  ) => (e: DragEvent) => {},
-  dropInfo: {
-    path: (null: ?(Path[])),
-    canDrop: false
+const PathContext = createContext([]);
+const RootContext = createContext({
+  rootKey: null,
+  handleDragOver: () => {
+    throw new Error('Cannot handle dragover outside of Guration.Root');
+  },
+  handleDrop: () => {
+    throw new Error('Cannot handle drop outside of Guration.Root');
   }
 });
-const PathContext = React.createContext({
-  path: [],
-  type: '@@ROOT'
-});
-const DedupeContext = React.createContext({
-  register: (type: string, id: string, path: Path[], index: number) => {},
-  deregister: (type: string, id: string) => {},
-  getDuplicate: (type: string, id: string): ?MoveData => null
-});
+const DedupeContext = createContext({});
 
-export { RootContext, PathContext, DedupeContext };
+export { PathContext, RootContext, DedupeContext };

@@ -1,108 +1,109 @@
-// @flow
-
-import React, { type Node as ReactNode } from 'react';
+import React from 'react';
 import Node from './Node';
-import Children from './Children';
-import Dedupe from './Dedupe';
+import DedupeLevel from './DedupeLevel';
+import DedupeNode from './DedupeNode';
+import { RootContext } from './Context';
+import { AddPathLevel, eq } from './utils/path';
 
-type DragProps = {
-  draggable: true,
-  onDragStart: (e: DragEvent) => void
-};
-
-type DropProps = {
-  onDragOver: (e: DragEvent) => void,
-  onDrop: (e: DragEvent) => void
-};
-
-type LevelProps<T> = {
-  arr: T[],
-  type: string,
-  field?: string,
-  getKey: (child: T) => string,
-  getDedupeKey?: (child: T) => string,
-  dedupeType?: *,
-  renderDrop?: (
-    dropProps: DropProps,
-    isTarget: boolean,
-    i: number
-  ) => ReactNode,
-  maxChildren: number,
-  children: (
-    child: T,
-    getDragProps: () => DragProps,
-    dropProps: DropProps,
-    i: number
-  ) => ReactNode
-};
-
-const getDedupeWrapperAndProps = (dedupeType: *) =>
-  dedupeType
-    ? {
-        Wrapper: Dedupe,
-        props: { type: dedupeType }
-      }
-    : { Wrapper: React.Fragment, props: {} };
-
-class Level<T: *> extends React.Component<LevelProps<T>> {
+class Level extends React.Component {
   static defaultProps = {
-    getKey: ({ id }: { id: string }) => id,
-    maxChildren: Infinity
+    dropOnNode: true // sets node drag props to allow drops
   };
+
+  get childrenField() {
+    return this.props.field || `${this.props.type}s`;
+  }
 
   render() {
     const {
       arr,
       type,
-      field = `${type}s`,
-      getKey,
-      getDedupeKey = getKey,
-      dedupeType,
       children,
-      maxChildren,
-      renderDrop
+      renderDrop,
+      getKey = ({ id }) => id,
+      getDedupeKey = getKey,
+      dropOnNode,
+      dedupeType
     } = this.props;
 
-    const { Wrapper, props } = getDedupeWrapperAndProps(dedupeType);
-
     return (
-      <Children type={type} field={field}>
-        {(_getDropProps, isTarget) => {
-          const getDropProps = _getDropProps({
-            childrenCount: arr.length,
-            maxChildren
-          });
-          return (
-            <Wrapper {...props}>
-              {arr.map((child, i) => (
-                <React.Fragment key={getKey(child)}>
-                  {!!renderDrop && renderDrop(getDropProps(i), isTarget(i), i)}
-                  <Node
-                    id={getKey(child)}
-                    dedupeKey={getDedupeKey(child)}
-                    index={i}
+      <DedupeLevel type={dedupeType}>
+        <DedupeNode type={type}>
+          {getDuplicate => (
+            <RootContext.Consumer>
+              {({
+                handleDragStart,
+                handleDragOver,
+                handleDrop,
+                dropInfo: { canDrop, path: dropPath }
+              }) => (
+                <React.Fragment>
+                  {arr.map((item, i) => (
+                    <React.Fragment key={getKey(item)}>
+                      <AddPathLevel
+                        childrenField={this.childrenField}
+                        id="@@DROP"
+                        type={type}
+                        index={i}
+                      >
+                        {path =>
+                          renderDrop &&
+                          renderDrop(
+                            () => ({
+                              onDrop: handleDrop(path, getDuplicate, 0),
+                              onDragOver: handleDragOver(path, getDuplicate, 0)
+                            }),
+                            {
+                              canDrop,
+                              isOver: dropPath && eq(path, dropPath)
+                            },
+                            i
+                          )
+                        }
+                      </AddPathLevel>
+                      <Node
+                        item={item}
+                        id={getKey(item)}
+                        dedupeKey={getDedupeKey(item)}
+                        type={type}
+                        index={i}
+                        childrenField={this.childrenField}
+                        // TODO: maybe move this into Node?
+                        handleDragStart={handleDragStart}
+                        handleDragOver={dropOnNode && handleDragOver}
+                        handleDrop={dropOnNode && handleDrop}
+                      >
+                        {children}
+                      </Node>
+                    </React.Fragment>
+                  ))}
+                  <AddPathLevel
+                    childrenField={this.childrenField}
+                    id="@@DROP"
+                    type={type}
+                    index={arr.length}
                   >
-                    {(getDragProps, getIndexOffset) =>
-                      children(
-                        child,
-                        getDragProps,
-                        getDropProps(i, getIndexOffset),
-                        i
+                    {path =>
+                      renderDrop &&
+                      renderDrop(
+                        () => ({
+                          onDrop: handleDrop(path, getDuplicate, 0),
+                          onDragOver: handleDragOver(path, getDuplicate, 0)
+                        }),
+                        {
+                          canDrop,
+                          isOver: dropPath && eq(path, dropPath)
+                        },
+                        arr.length
                       )
                     }
-                  </Node>
+                  </AddPathLevel>
                 </React.Fragment>
-              ))}
-              {!!renderDrop &&
-                renderDrop(
-                  getDropProps(arr.length),
-                  isTarget(arr.length),
-                  arr.length
-                )}
-            </Wrapper>
-          );
-        }}
-      </Children>
+              )}
+            </RootContext.Consumer>
+          )}
+        </DedupeNode>
+      </DedupeLevel>
     );
   }
 }

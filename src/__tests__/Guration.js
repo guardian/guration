@@ -1,18 +1,14 @@
 import React from 'react';
 import TestRenderer from 'react-test-renderer';
-import { Root, Level } from '../index';
-
-class DataTransfer {
-  data = {};
-
-  setData = (key, val) => (this.data[key] = val);
-  getData = key => this.data[key];
-}
+import Root from '../Root';
+import Level from '../Level';
 
 const createDragEvent = () => {
   const _data = {};
 
   return {
+    _data,
+    preventDefault: () => {},
     dataTransfer: {
       setData: (key, val) => (_data[key] = val),
       getData: key => _data[key]
@@ -20,7 +16,7 @@ const createDragEvent = () => {
   };
 };
 
-const runDrag = (type, data, json = true) => dropProps => {
+const runDrag = (type, data, json = true) => dropProps => inst => {
   const e = createDragEvent();
 
   if (typeof type === 'string') {
@@ -30,21 +26,24 @@ const runDrag = (type, data, json = true) => dropProps => {
     type.onDragStart(e);
   }
 
+  // simulate event bubbling
+  inst.eventHandled = false;
+
   dropProps.onDrop(e);
 };
 
 describe('Guration', () => {
   it('creates MOVE events from dragged nodes', () => {
-    let dragProps;
+    let nodeProps;
     let dropProps;
     let edit;
 
-    TestRenderer.create(
+    const inst = TestRenderer.create(
       <Root type="@@ROOT" id="@@ROOT" onChange={e => (edit = e)}>
         <Level arr={[{ id: 1 }, { id: 2 }]} type="a">
-          {(child, getDragProps, getDropProps, i) => {
+          {(child, getNodeProps, i) => {
             if (i === 0) {
-              dragProps = getDragProps();
+              nodeProps = getNodeProps();
             }
 
             return (
@@ -52,21 +51,21 @@ describe('Guration', () => {
                 arr={[{ id: 1 }, { id: 2 }]}
                 field="children"
                 type="a"
-                renderDrop={(_dropProps, isTarget, i) => {
-                  if (i === 1) {
-                    dropProps = _dropProps;
+                renderDrop={(getDropProps, isTarget, j) => {
+                  if (j === 1) {
+                    dropProps = getDropProps();
                   }
                 }}
               >
-                {() => {}}
+                {() => null}
               </Level>
             );
           }}
         </Level>
       </Root>
-    );
+    ).getInstance();
 
-    runDrag(dragProps)(dropProps);
+    runDrag(nodeProps)(dropProps)(inst);
 
     expect(edit[0].type).toEqual('MOVE');
   });
@@ -75,12 +74,12 @@ describe('Guration', () => {
     let dropProps;
     let edit;
 
-    TestRenderer.create(
+    const inst = TestRenderer.create(
       <Root
         type="@@ROOT"
         id="@@ROOT"
         onChange={e => (edit = e)}
-        dropMappers={{
+        mapIn={{
           text: str => JSON.parse(str)
         }}
       >
@@ -90,21 +89,21 @@ describe('Guration', () => {
               arr={[{ id: 1 }]}
               type="a"
               field="children"
-              renderDrop={_dropProps => {
-                dropProps = _dropProps;
+              renderDrop={getDropProps => {
+                dropProps = getDropProps();
               }}
             >
-              {() => {}}
+              {() => null}
             </Level>
           )}
         </Level>
       </Root>
-    );
+    ).getInstance();
 
     runDrag('text', {
       type: 'a',
       id: 2
-    })(dropProps);
+    })(dropProps)(inst);
 
     expect(edit[0]).toEqual({
       type: 'INSERT',
@@ -128,12 +127,12 @@ describe('Guration', () => {
     let dropProps;
     let edit;
 
-    TestRenderer.create(
+    const inst = TestRenderer.create(
       <Root
         type="@@ROOT"
         id="@@ROOT"
         onChange={e => (edit = e)}
-        dropMappers={{
+        mapIn={{
           text: str => JSON.parse(str)
         }}
       >
@@ -143,23 +142,23 @@ describe('Guration', () => {
               arr={[{ id: 2 }, { id: 3 }, { id: 4 }]}
               field="children2"
               type="a"
-              renderDrop={(_dropProps, isTarget, i) => {
+              renderDrop={(getDropProps, isTarget, i) => {
                 if (i === 1) {
-                  dropProps = _dropProps;
+                  dropProps = getDropProps();
                 }
               }}
             >
-              {() => {}}
+              {() => null}
             </Level>
           )}
         </Level>
       </Root>
-    );
+    ).getInstance();
 
     runDrag('text', {
       type: 'a',
       id: 4
-    })(dropProps);
+    })(dropProps)(inst);
 
     expect(edit[0]).toEqual({
       payload: {
@@ -187,29 +186,29 @@ describe('Guration', () => {
     let dropProps;
     let error;
 
-    TestRenderer.create(
+    const inst = TestRenderer.create(
       <Root type="@@ROOT" id="@@ROOT" onError={e => (error = e)}>
         <Level arr={[{ id: 2 }]} type="a" field="children">
-          {(child, getDragProps) => {
-            dragProps = getDragProps();
+          {(child, getNodeProps) => {
+            dragProps = getNodeProps();
             return (
               <Level
                 arr={[]}
                 field="children"
                 type="a"
-                renderDrop={_dropProps => {
-                  dropProps = _dropProps;
+                renderDrop={getDropProps => {
+                  dropProps = getDropProps();
                 }}
               >
-                {() => {}}
+                {() => null}
               </Level>
             );
           }}
         </Level>
       </Root>
-    );
+    ).getInstance();
 
-    runDrag(dragProps)(dropProps);
+    runDrag(dragProps)(dropProps)(inst);
 
     expect(error).toBeTruthy();
   });
@@ -219,27 +218,28 @@ describe('Guration', () => {
     let dropProps;
     let error;
 
-    TestRenderer.create(
+    const inst = TestRenderer.create(
       <Root type="@@ROOT" id="@@ROOT" onError={e => (error = e)}>
         <Level arr={[{ id: 2 }]} field="children" type="a">
-          {(child, getDragProps) => {
-            dragProps = getDragProps();
+          {(child, getNodeProps) => {
+            dragProps = getNodeProps();
+            return null;
           }}
         </Level>
         <Level
           arr={[]}
           field="other"
           type="b"
-          renderDrop={_dropProps => {
-            dropProps = _dropProps;
+          renderDrop={getDropProps => {
+            dropProps = getDropProps();
           }}
         >
-          {() => {}}
+          {() => null}
         </Level>
       </Root>
-    );
+    ).getInstance();
 
-    runDrag(dragProps)(dropProps);
+    runDrag(dragProps)(dropProps)(inst);
 
     expect(error).toBeTruthy();
   });
@@ -249,27 +249,27 @@ describe('Guration', () => {
     let dropProps;
     let edit;
 
-    TestRenderer.create(
+    const inst = TestRenderer.create(
       <Root type="@@ROOT" id="@@ROOT" onChange={e => (edit = e)}>
         <Level
           type="b"
           arr={[{ id: 1 }, { id: 2 }, { id: 3 }]}
-          renderDrop={_dropProps => {
-            dropProps = _dropProps;
+          renderDrop={getDropProps => {
+            dropProps = getDropProps();
           }}
         >
-          {(child, getDragProps, getDropProps, i) => {
+          {(child, getNodeProps, i) => {
             if (i === 0) {
-              dragProps = getDragProps();
+              dragProps = getNodeProps();
             }
 
             return false;
           }}
         </Level>
       </Root>
-    );
+    ).getInstance();
 
-    runDrag(dragProps)(dropProps);
+    runDrag(dragProps)(dropProps)(inst);
 
     expect(edit[0].payload.to.index).toBe(2);
   });
@@ -279,122 +279,98 @@ describe('Guration', () => {
     let dropProps;
     let edit;
 
-    TestRenderer.create(
+    const inst = TestRenderer.create(
       <Root type="@@ROOT" id="@@ROOT" onChange={e => (edit = e)}>
         <Level
           arr={[{ id: '1' }]}
           field="children"
           type="a"
-          renderDrop={_dropProps => {
-            dropProps = _dropProps;
+          renderDrop={getDropProps => {
+            dropProps = getDropProps();
           }}
         >
-          {(child, getDragProps) => {
-            dragProps = getDragProps();
+          {(child, getNodeProps) => {
+            dragProps = getNodeProps();
+            return null;
           }}
         </Level>
       </Root>
-    );
+    ).getInstance();
 
-    runDrag(dragProps)(dropProps);
+    runDrag(dragProps)(dropProps)(inst);
 
     expect(edit).toBe(undefined);
   });
 
-  it('disallows adding more than maxChildren', () => {
-    let dropProps;
-    let error;
+  // TODO: implement
+  //   it('disallows adding more than maxChildren', () => {
+  //     let dropProps;
+  //     let error;
 
-    TestRenderer.create(
-      <Root
-        type="@@ROOT"
-        id="@@ROOT"
-        onError={e => (error = e)}
-        dropMappers={{
-          text: str => JSON.parse(str)
-        }}
-      >
-        <Level
-          type="a"
-          arr={[{ id: 1 }]}
-          maxChildren={1}
-          renderDrop={props => {
-            // should be the 2nd drop after all reassignments
-            dropProps = props;
-          }}
-        >
-          {child => null}
-        </Level>
-      </Root>
-    );
+  //     const inst = TestRenderer.create(
+  //       <Root
+  //         type="@@ROOT"
+  //         id="@@ROOT"
+  //         onChange={() => {}}
+  //         onError={e => (error = e)}
+  //         mapIn={{
+  //           text: str => JSON.parse(str)
+  //         }}
+  //       >
+  //         <Level
+  //           type="a"
+  //           arr={[{ id: 1 }]}
+  //           maxChildren={1}
+  //           renderDrop={getDropProps => {
+  //             // should be the 2nd drop after all reassignments
+  //             dropProps = getDropProps();
+  //           }}
+  //         >
+  //           {child => null}
+  //         </Level>
+  //       </Root>
+  //     );
 
-    runDrag('text', {
-      type: 'a',
-      id: 2
-    })(dropProps);
+  //     runDrag('text', {
+  //       type: 'a',
+  //       id: 2
+  //     })(dropProps)(inst);
 
-    expect(error).toBeTruthy();
-  });
+  //     expect(error).toBeTruthy();
+  //   });
 
-  it('creates moves between roots with the same key', () => {
-    let dragProps;
-    let dropProps;
-    let edits;
+  // TODO: implement outMap
+  // it('creates inserts between roots', () => {
+  //   let nodeProps;
+  //   let dropProps;
+  //   let edits;
 
-    TestRenderer.create(
-      <div>
-        <Root type="@@ROOT" id="@@ROOT">
-          <Level type="a" arr={[{ id: 1 }]}>
-            {(child, getDragProps) => {dragProps = getDragProps()}}
-          </Level>
-        </Root>
-        <Root type="@@ROOT" id="@@ROOT" onChange={e => (edits = e)}>
-          <Level
-            type="a"
-            arr={[{ id: 1 }, { id: 2 }]}
-            renderDrop={props => {
-              dropProps = props;
-            }}
-          >
-            {child => null}
-          </Level>
-        </Root>
-      </div>
-    );
+  //   const inst = TestRenderer.create(
+  //     <div>
+  //       <Root type="@@ROOT" id="@@ROOT">
+  //         <Level type="a" arr={[{ id: 1 }]}>
+  //           {(child, getNodeProps) => {
+  //             nodeProps = getNodeProps();
+  //             return null;
+  //           }}
+  //         </Level>
+  //       </Root>
+  //       <Root type="@@ROOT" id="@@ROOT" onChange={e => (edits = e)}>
+  //         <Level
+  //           type="a"
+  //           arr={[{ id: 1 }, { id: 2 }]}
+  //           renderDrop={getDropProps => {
+  //             dropProps = getDropProps();
+  //           }}
+  //         >
+  //           {child => null}
+  //         </Level>
+  //       </Root>
+  //     </div>
+  //   ).getInstance();
 
-    runDrag(dragProps)(dropProps);
+  //   runDrag(nodeProps)(dropProps)(inst);
 
-    expect(edits[0].type).toBe('MOVE');
-  });
-
-  it('creates inserts between roots with a different key', () => {
-    let dragProps;
-    let dropProps;
-    let edits;
-
-    TestRenderer.create(
-      <div>
-        <Root type="@@ROOT" id="@@ROOT" rootKey="a">
-          <Level type="a" arr={[{ id: 1 }]}>
-            {(child, getDragProps) => {dragProps = getDragProps()}}
-          </Level>
-        </Root>
-        <Root type="@@ROOT" id="@@ROOT" rootKey="b" onChange={e => (edits = e)}>
-          <Level
-            type="a"
-            arr={[{ id: 1 }, { id: 2 }]}
-            renderDrop={props => {
-              dropProps = props;
-            }}
-          >
-            {child => null}
-          </Level>
-        </Root>
-      </div>
-    );
-
-    runDrag(dragProps)(dropProps);
-
-    expect(edits[0].type).toBe('INSERT');
-  });
+  //   expect(edits[0].type).toBe('INSERT');
+  // });
 });

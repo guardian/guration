@@ -10,7 +10,24 @@ export default [
       file: 'dist/index.js',
       format: 'cjs'
     },
-    plugins: [babel(), defs()],
+    plugins: [
+      babel(),
+      defs(),
+      commonjs({
+        include: 'node_modules/**',
+        namedExports: {
+          'node_modules/react/index.js': [
+            'Component',
+            'PureComponent',
+            'Fragment',
+            'Children',
+            'createElement',
+            'createContext',
+            'forwardRef'
+          ]
+        }
+      })
+    ],
     external: ['react', 'lodash/fp/get', 'lodash/fp/set']
-  },
+  }
 ];

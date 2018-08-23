@@ -1,5 +1,3 @@
-// @flow
-
 import React from 'react';
 import { Root, Level } from '../../../../src';
 import DragZone from '../components/DragZone';
@@ -8,41 +6,11 @@ import Indent from '../components/Indent';
 
 const json = (fn = a => a) => str => fn(JSON.parse(str));
 
-const renderDrop = (props, isTarget) => (
-  <DropZone {...props} isOver={isTarget} />
+const renderDrop = (getDropProps, { isOver, canDrop }) => (
+  <DropZone {...getDropProps()} isOver={isOver} canDrop={canDrop} />
 );
 
-type Base = {
-  id: string,
-  title: string
-};
-
-type Supporting = Base;
-
-type ArticleFragment = Base & {
-  meta: {
-    supporting: Supporting[]
-  }
-};
-
-type Group = {
-  id: string,
-  articleFragments: ArticleFragment[]
-};
-
-type Collection = Base & {
-  groups: Group[]
-};
-
-type Front = Base & {
-  collections: Collection[]
-};
-
-type AppProps = {
-  front: Front
-};
-
-const App = ({ front }: AppProps) => (
+const App = ({ front }) => (
   <div>
     <DragZone type="json" json data={{ type: 'articleFragment', id: 1 }}>
       Article 1 (is a dupe)
@@ -53,8 +21,8 @@ const App = ({ front }: AppProps) => (
     <Root
       id={front.id}
       type="front"
-      onChange={change => console.log(change)}
-      onError={error => console.log(error)}
+      onChange={console.log}
+      onError={console.log}
       dropMappers={{
         json: json()
       }}
@@ -82,20 +50,19 @@ const App = ({ front }: AppProps) => (
                       >
                         {(
                           { title, meta: { supporting } },
-                          afDragProps,
-                          afDropProps
+                          afNodeProps
                         ) => (
-                          <div {...afDropProps} style={{ padding: 10 }}>
-                            <h1 {...afDragProps()}>{title}</h1>
+                          <div {...afNodeProps()} style={{ padding: 10 }}>
+                            <h1>{title}</h1>
                             <Indent>
                               <Level
                                 arr={supporting}
                                 type="articleFragment"
                                 renderDrop={renderDrop}
                               >
-                                {({ title }, sDragProps, sDropProps) => (
-                                  <div {...sDropProps} style={{ padding: 10 }}>
-                                    <h1 {...sDragProps()}>{title}</h1>
+                                {({ title }, sNodeProps, sDropProps) => (
+                                  <div {...sNodeProps()} style={{ padding: 10 }}>
+                                    <h1>{title}</h1>
                                   </div>
                                 )}
                               </Level>

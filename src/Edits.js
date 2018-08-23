@@ -1,41 +1,4 @@
-// @flow
-
-import { type Path } from './types/Path';
-
-type Move = {|
-  type: 'MOVE',
-  payload: {|
-    type: string,
-    id: string,
-    from: {|
-      parent: Path
-    |},
-    to: {|
-      parent: Path,
-      index: number
-    |}
-  |}
-|};
-
-type Insert = {|
-  type: 'INSERT',
-  payload: {|
-    type: string,
-    id: string,
-    path: {|
-      parent: Path,
-      index: number
-    |}
-  |}
-|};
-
-const move = (
-  type: string,
-  id: string,
-  dragPath: Path[],
-  path: Path[],
-  newIndex: number
-): Move => ({
+const move = (type, id, dragPath, path, newIndex) => ({
   type: 'MOVE',
   payload: {
     type,
@@ -50,12 +13,7 @@ const move = (
   }
 });
 
-const insert = (
-  type: string,
-  id: string,
-  dragPath: Path[],
-  newIndex: number
-): Insert => ({
+const insert = (type, id, dragPath, newIndex) => ({
   type: 'INSERT',
   payload: {
     type,
@@ -67,7 +25,4 @@ const insert = (
   }
 });
 
-type Edit = Move | Insert;
-
 export { move, insert };
-export type { Edit, Move, Insert };

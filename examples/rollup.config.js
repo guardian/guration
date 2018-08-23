@@ -33,7 +33,18 @@ export default examples.map(example => ({
       browser: true
     }),
     commonjs({
-      include: 'node_modules/**'
+      include: 'node_modules/**',
+      namedExports: {
+        'node_modules/react/index.js': [
+          'Component',
+          'PureComponent',
+          'Fragment',
+          'Children',
+          'createElement',
+          'createContext',
+          'forwardRef'
+        ]
+      }
     })
   ]
 }));
