@@ -1,14 +1,16 @@
 # Guration
 
-A module that allows you to validate drag and drop actions on a tree of data, culminating in 'edits' that describe the modification on a normalized data structure. There are two types of edits a `Remove` and an `Insert`. The drag and drop logic is handle by the `Level` component, so reference below to drag zones and drop zones will refer to the drag zones created using the `Level` component. Note that **edits don't change the tree**, instead the expectation is that state updates will be made in the consumer appilcation in response to these edits that cause a render to the `Guration` part of the app that then reflects these edits.
+A module that allows you to validate drag and drop actions on a tree of data, culminating in 'edits' that describe the modification on a normalized data structure (rather than the whole tree). There are two types of edits a `Remove` and an `Insert`. The drag and drop logic is handle by the `Level` component, so reference below to drag zones and drop zones will refer to the drag zones created using the `Level` component.
+
+Note that **a valid drop doesn't changed the rendered tree**, instead the expectation is that state updates will be made in the consumer appilcation in response to these edits that cause a render to the `Guration` part of the app that then reflects these edits.
 
 ## Edits
 
-First it will be worth describing edits. Edits are objects that describe an update to the tree and will only be fired when they are deemed to be valid (i.e. a drop of some type into a position that accepts that type). Moves into the same position (i.e. moving an element into the drop zone either side of itself) will not fire edits, and edits that are invalid will fire errors.
+First it will be worth describing edits. Edits are objects that describe an update to the tree and will only be fired when they are deemed to be valid (i.e. a drop of some `type` into a position that accepts that `type`). Moves into the same position (i.e. moving an node into the drop zone either side of itself) will not fire edits, and edits that are invalid will fire errors.
 
 ### `Remove`
 
-A `Remove` edit will only fire as part of a pair of edits: `[Remove, Insert]`, which describes a move of an element from inside the Guration `Root` context back into another valid position. It has the following shape:
+A `Remove` edit will only fire as part of a pair of edits: `[Remove, Insert]`, which describes a move of an node from inside the Guration `Root` context back into another valid position. It has the following shape:
 
 ```js
 type Remove = {
@@ -30,7 +32,7 @@ type Remove = {
 
 ### `Insert`
 
-An `Insert` edit will fire either in tandem with a `Remove` edit (for a move of an item from within the `Guration` context as mentioned above), or otherwise for an insert of some item from outside that has been mapped in through (`mapIn`)[#mapIn]. It has the following shape:
+An `Insert` edit will fire either in tandem with a `Remove` edit (for a move of an item from within the `Guration` context as mentioned above), or otherwise for an insert of some item from outside that has been mapped in through [`mapIn`](#mapIn). It has the following shape:
 
 ```js
 type Insert = {
@@ -50,6 +52,8 @@ type Insert = {
   }
 };
 ```
+
+The only difference between this and a `Insert` (aside from it's semantic intent) is that it has an `index` to move to in the payload.
 
 ## Component API
 
@@ -81,7 +85,7 @@ An object with any of the keys `INSERT` or `REMOVE` where the values are callbac
 
 ##### `onError: ?(error: string) => void`
 
-A callback that will recieve strings describing errors regarding invalid drops. For example, dropping an element of one type into a level of another type or dropping an element into a child of itself.
+A callback that will recieve strings describing errors regarding invalid drops. For example, dropping an node of one type into a level of another type or dropping an node into a child of itself.
 
 ##### `mapIn: ?{ [string]: string => { id: string, type: string } }`
 
@@ -93,13 +97,13 @@ An object that does the opposite of `mapIn` and describes how to transform a nod
 
 ### \<Level />
 
-A `Level` is repsonsible for defining the types for a specific level in the tree as well as defining the types for the elements that _are_ currently rendered in that position. It also provides the props for draggable nodes and renders drop zones between these nodes.
+A `Level` is repsonsible for defining the types for a specific level in the tree as well as defining the types for the nodes that _are_ currently rendered in that position. It also provides the props for draggable nodes and renders drop zones between these nodes.
 
 #### Props
 
 ##### `arr: <T: Object>[]`
 
-The array of elements to map over. Passing this in allows the component to handle laying out drop zones between each element (using fragments) and plucking the id of each element in order to construct edits.
+The array of nodes to map over. Passing this in allows the component to handle laying out drop zones between each node (using fragments) and plucking the id of each node in order to construct edits.
 
 ##### `children: (item, getNodeProps, index) => ReactElement`
 
@@ -107,7 +111,7 @@ This is not a React element but a function child. `item` is an item in the array
 
 ##### `type: string`
 
-Much like `Root` this specifies both the time of the draggable elements at this level and the type of element that can be dragged to this level.
+Much like `Root` this specifies both the time of the draggable nodes at this level and the type of node that can be dragged to this level.
 
 ##### `field: ?string`
 
@@ -131,7 +135,7 @@ The function that returns the key for comapring items for deduping, defaults to 
 
 ##### `dropOnNode: ?boolean`
 
-A boolean that defaults to `treu`, which specifics whether `getNodeProps` will return props that allow dropping on top of the node element. If this is true, dropping in the top 50% of the node will result in a drop at that node's index, and likewise dropping in the bottom 50% will result in a drop at the index after that node.
+A boolean that defaults to `treu`, which specifics whether `getNodeProps` will return props that allow dropping on top of the node. If this is true, dropping in the top 50% of the node will result in a drop at that node's index, and likewise dropping in the bottom 50% will result in a drop at the index after that node.
 
 ## Example
 
