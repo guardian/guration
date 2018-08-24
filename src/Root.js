@@ -133,7 +133,10 @@ class Root extends React.Component {
     this.runLowest(() => {
       Object.keys(this.mapOut).forEach(key => {
         const mapper = this.mapOut[key];
-        e.dataTransfer.setData(key, mapper(item, type, id, path));
+        const val = mapper(item, type, id, path);
+        if (typeof val === 'string') {
+          e.dataTransfer.setData(key, val);
+        }
       });
 
       this.setState({

@@ -89,7 +89,7 @@ An object whose keys represent a `type` on `e.dataTransfer.types` that can be ha
 
 ##### `mapOut: ?{ [string]: (el: Object, type: string, id: string, path: Path[]) => string }`
 
-An object that does the opposite of `mapIn` and receives an item that is represented by a draggable node. The keys on the object are the keys that will be called using `e.dataTransfer.setData(key)`, allowing drags from here to other drop zones (possibly other Guration contexts).
+An object that does the opposite of `mapIn` and describes how to transform a node into drag data. The keys on the object are the keys that will be called using `e.dataTransfer.setData(key)`, allowing drags from here to other drop zones (possibly other Guration contexts).
 
 ### <Level />
 
