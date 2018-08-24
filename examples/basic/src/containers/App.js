@@ -6,8 +6,8 @@ import Indent from '../components/Indent';
 
 const json = (fn = a => a) => str => fn(JSON.parse(str));
 
-const renderDrop = (getDropProps, { isOver, canDrop }) => (
-  <DropZone {...getDropProps()} isOver={isOver} canDrop={canDrop} />
+const renderDrop = (getDropProps, { isTarget, canDrop }) => (
+  <DropZone {...getDropProps()} isOver={isTarget} canDrop={canDrop} />
 );
 
 const App = ({ front }) => (
@@ -33,8 +33,8 @@ const App = ({ front }) => (
         renderDrop={renderDrop}
         dedupeType="articleFragment"
       >
-        {({ title, groups }) => (
-          <div>
+        {({ title, groups }, getNodeProps) => (
+          <div {...getNodeProps()}>
             <h1>{title}</h1>
             <Indent>
               <Level arr={groups} type="group" renderDrop={renderDrop}>

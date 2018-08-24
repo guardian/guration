@@ -7284,6 +7284,21 @@
 	  parentContext: parentContext
 	}))));
 
+	const doRenderDrop = (renderDrop, onDrop, onDragOver, canDrop, dropPath, path, i) => {
+	  if (!renderDrop) {
+	    return null;
+	  }
+
+	  const isTarget = dropPath && eq(path, dropPath);
+	  return renderDrop(() => ({
+	    onDrop,
+	    onDragOver
+	  }), {
+	    canDrop: isTarget && canDrop,
+	    isTarget
+	  }, i);
+	};
+
 	class Level extends react.Component {
 	  get childrenField() {
 	    return this.props.field || `${this.props.type}s`;
@@ -7319,13 +7334,7 @@
 	      id: "@@DROP",
 	      type: type,
 	      index: i
-	    }, path => renderDrop && renderDrop(() => ({
-	      onDrop: handleDrop(path, getDuplicate, 0),
-	      onDragOver: handleDragOver(path, getDuplicate, 0)
-	    }), {
-	      canDrop,
-	      isOver: dropPath && eq(path, dropPath)
-	    }, i)), react.createElement(Node, {
+	    }, path => doRenderDrop(renderDrop, handleDrop(path, getDuplicate, 0), handleDragOver(path, getDuplicate, 0), canDrop, dropPath, path, i)), react.createElement(Node, {
 	      item: item,
 	      id: getKey(item),
 	      dedupeKey: getDedupeKey(item),
@@ -7341,13 +7350,7 @@
 	      id: "@@DROP",
 	      type: type,
 	      index: arr.length
-	    }, path => renderDrop && renderDrop(() => ({
-	      onDrop: handleDrop(path, getDuplicate, 0),
-	      onDragOver: handleDragOver(path, getDuplicate, 0)
-	    }), {
-	      canDrop,
-	      isOver: dropPath && eq(path, dropPath)
-	    }, arr.length))))));
+	    }, path => doRenderDrop(renderDrop, handleDrop(path, getDuplicate, 0), handleDragOver(path, getDuplicate, 0), canDrop, dropPath, path, arr.length))))));
 	  }
 
 	}
@@ -7372,29 +7375,25 @@
 	  }) => id
 	});
 
-	const move = (type, id, dragPath, path, newIndex) => ({
-	  type: 'MOVE',
+	const remove = (type, id, path) => ({
+	  type: 'REMOVE',
 	  payload: {
 	    type,
 	    id,
-	    from: {
-	      parent: dragPath[dragPath.length - 2]
-	    },
-	    to: {
-	      parent: path[path.length - 2],
-	      index: newIndex
+	    path: {
+	      parent: path[path.length - 2]
 	    }
 	  }
 	});
 
-	const insert = (type, id, dragPath, newIndex) => ({
+	const insert = (type, id, path, index) => ({
 	  type: 'INSERT',
 	  payload: {
 	    type,
 	    id,
 	    path: {
-	      parent: dragPath[dragPath.length - 2],
-	      index: newIndex
+	      parent: path[path.length - 2],
+	      index
 	    }
 	  }
 	});
@@ -7422,8 +7421,7 @@
 	  const {
 	    index
 	  } = movePath[movePath.length - 1];
-	  const edits = [hasMoved(prevPath, nextPath) ? move(type, id, prevPath, movePath, index) : null].filter(Boolean);
-	  return edits;
+	  return hasMoved(prevPath, nextPath) ? [remove(type, id, prevPath), insert(type, id, movePath, index)] : [];
 	};
 
 	const handleInsert = ({
@@ -7463,7 +7461,7 @@
 	  dropType: 'INTERNAL'
 	});
 
-	const internalMapOut = (item, path, id, type) => JSON.stringify({
+	const internalMapOut = (item, type, id, path) => JSON.stringify({
 	  id,
 	  type,
 	  path
@@ -7501,7 +7499,7 @@
 	    _defineProperty(this, "handleNodeDragStart", (item, path, id, type) => e => this.runLowest(() => {
 	      Object.keys(this.mapOut).forEach(key => {
 	        const mapper = this.mapOut[key];
-	        e.dataTransfer.setData(key, mapper(item, path, id, type));
+	        e.dataTransfer.setData(key, mapper(item, type, id, path));
 	      });
 	      this.setState({
 	        dragData: {
@@ -7557,7 +7555,7 @@
 	        const edits = getEdits(data, path, getDuplicate);
 
 	        if (edits.length) {
-	          !dragData && this.props.onChange(edits);
+	          !dragData && this.runEdits(edits);
 	          return {
 	            path,
 	            canDrop: true
@@ -7575,6 +7573,11 @@
 	          canDrop: false
 	        };
 	      }
+	    });
+
+	    _defineProperty(this, "runEdits", edits => {
+	      this.props.onChange(edits);
+	      edits.forEach(edit => (this.props.onEdit[edit.type] || (() => {}))(edit));
 	    });
 	  }
 
@@ -7659,6 +7662,7 @@
 	  render() {
 	    const {
 	      type,
+	      field,
 	      id
 	    } = this.props;
 	    return react.createElement("div", {
@@ -7674,6 +7678,7 @@
 	      }
 	    }, react.createElement(Level, {
 	      type: type,
+	      field: field,
 	      arr: [{
 	        id
 	      }]
@@ -7685,7 +7690,9 @@
 	_defineProperty(Root, "propTypes", {
 	  id: propTypes.oneOfType([propTypes.string, propTypes.number]).isRequired,
 	  type: propTypes.oneOfType([propTypes.string, propTypes.number]).isRequired,
-	  onChange: propTypes.func.isRequired,
+	  field: propTypes.string,
+	  onChange: propTypes.func,
+	  onEdit: propTypes.object,
 	  onError: propTypes.func,
 	  mapIn: propTypes.object,
 	  mapOut: propTypes.object
@@ -7694,6 +7701,8 @@
 	_defineProperty(Root, "defaultProps", {
 	  mapIn: {},
 	  mapOut: {},
+	  onChange: () => {},
+	  onEdit: {},
 	  onError: () => {}
 	});
 
@@ -7734,10 +7743,10 @@
 	const json = (fn = a => a) => str => fn(JSON.parse(str));
 
 	const renderDrop = (getDropProps, {
-	  isOver,
+	  isTarget,
 	  canDrop
 	}) => react.createElement(DropZone, _extends({}, getDropProps(), {
-	  isOver: isOver,
+	  isOver: isTarget,
 	  canDrop: canDrop
 	}));
 
@@ -7773,7 +7782,7 @@
 	}, ({
 	  title,
 	  groups
-	}) => react.createElement("div", null, react.createElement("h1", null, title), react.createElement(Indent, null, react.createElement(Level, {
+	}, getNodeProps) => react.createElement("div", getNodeProps(), react.createElement("h1", null, title), react.createElement(Indent, null, react.createElement(Level, {
 	  arr: groups,
 	  type: "group",
 	  renderDrop: renderDrop
@@ -7810,6 +7819,10 @@
 	  id: '1',
 	  title: 'Front',
 	  collections: [{
+	    id: '2',
+	    title: 'Coll 2',
+	    groups: []
+	  }, {
 	    id: '1',
 	    title: 'Coll 1',
 	    groups: [{

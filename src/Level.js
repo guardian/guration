@@ -6,6 +6,34 @@ import DedupeNode from './DedupeNode';
 import { RootContext } from './Context';
 import { AddPathLevel, eq } from './utils/path';
 
+const doRenderDrop = (
+  renderDrop,
+  onDrop,
+  onDragOver,
+  canDrop,
+  dropPath,
+  path,
+  i
+) => {
+  if (!renderDrop) {
+    return null;
+  }
+
+  const isTarget = dropPath && eq(path, dropPath);
+
+  return renderDrop(
+    () => ({
+      onDrop,
+      onDragOver
+    }),
+    {
+      canDrop: isTarget && canDrop,
+      isTarget
+    },
+    i
+  );
+};
+
 class Level extends React.Component {
   static propTypes = {
     arr: PropTypes.arrayOf(PropTypes.object),
@@ -60,20 +88,15 @@ class Level extends React.Component {
                         type={type}
                         index={i}
                       >
-                        {path =>
-                          renderDrop &&
-                          renderDrop(
-                            () => ({
-                              onDrop: handleDrop(path, getDuplicate, 0),
-                              onDragOver: handleDragOver(path, getDuplicate, 0)
-                            }),
-                            {
-                              canDrop,
-                              isOver: dropPath && eq(path, dropPath)
-                            },
-                            i
-                          )
-                        }
+                        {path => doRenderDrop(
+                          renderDrop,
+                          handleDrop(path, getDuplicate, 0),
+                          handleDragOver(path, getDuplicate, 0),
+                          canDrop,
+                          dropPath,
+                          path,
+                          i
+                        )}
                       </AddPathLevel>
                       <Node
                         item={item}
@@ -97,20 +120,15 @@ class Level extends React.Component {
                     type={type}
                     index={arr.length}
                   >
-                    {path =>
-                      renderDrop &&
-                      renderDrop(
-                        () => ({
-                          onDrop: handleDrop(path, getDuplicate, 0),
-                          onDragOver: handleDragOver(path, getDuplicate, 0)
-                        }),
-                        {
-                          canDrop,
-                          isOver: dropPath && eq(path, dropPath)
-                        },
-                        arr.length
-                      )
-                    }
+                    {path => doRenderDrop(
+                      renderDrop,
+                      handleDrop(path, getDuplicate, 0),
+                      handleDragOver(path, getDuplicate, 0),
+                      canDrop,
+                      dropPath,
+                      path,
+                      arr.length
+                    )}
                   </AddPathLevel>
                 </React.Fragment>
               )}
