@@ -6325,7 +6325,7 @@
 	  return target;
 	}
 
-	function _objectWithoutProperties(source, excluded) {
+	function _objectWithoutPropertiesLoose(source, excluded) {
 	  if (source == null) return {};
 	  var target = {};
 	  var sourceKeys = Object.keys(source);
@@ -6336,6 +6336,16 @@
 	    if (excluded.indexOf(key) >= 0) continue;
 	    target[key] = source[key];
 	  }
+
+	  return target;
+	}
+
+	function _objectWithoutProperties(source, excluded) {
+	  if (source == null) return {};
+
+	  var target = _objectWithoutPropertiesLoose(source, excluded);
+
+	  var key, i;
 
 	  if (Object.getOwnPropertySymbols) {
 	    var sourceSymbolKeys = Object.getOwnPropertySymbols(source);
@@ -6358,6 +6368,74 @@
 	    return String(key);
 	  }
 	}
+
+	/**
+	 * Copyright (c) 2013-present, Facebook, Inc.
+	 *
+	 * This source code is licensed under the MIT license found in the
+	 * LICENSE file in the root directory of this source tree.
+	 */
+
+	var ReactPropTypesSecret = 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED';
+	var ReactPropTypesSecret_1 = ReactPropTypesSecret;
+
+	function emptyFunction$1() {}
+
+	var factoryWithThrowingShims = function () {
+	  function shim(props, propName, componentName, location, propFullName, secret) {
+	    if (secret === ReactPropTypesSecret_1) {
+	      // It is still safe when called from React.
+	      return;
+	    }
+
+	    var err = new Error('Calling PropTypes validators directly is not supported by the `prop-types` package. ' + 'Use PropTypes.checkPropTypes() to call them. ' + 'Read more at http://fb.me/use-check-prop-types');
+	    err.name = 'Invariant Violation';
+	    throw err;
+	  }
+	  shim.isRequired = shim;
+
+	  function getShim() {
+	    return shim;
+	  }
+	  // Keep this list in sync with production version in `./factoryWithTypeCheckers.js`.
+
+	  var ReactPropTypes = {
+	    array: shim,
+	    bool: shim,
+	    func: shim,
+	    number: shim,
+	    object: shim,
+	    string: shim,
+	    symbol: shim,
+	    any: shim,
+	    arrayOf: getShim,
+	    element: shim,
+	    instanceOf: getShim,
+	    node: shim,
+	    objectOf: getShim,
+	    oneOf: getShim,
+	    oneOfType: getShim,
+	    shape: getShim,
+	    exact: getShim
+	  };
+	  ReactPropTypes.checkPropTypes = emptyFunction$1;
+	  ReactPropTypes.PropTypes = ReactPropTypes;
+	  return ReactPropTypes;
+	};
+
+	var propTypes = createCommonjsModule(function (module) {
+	/**
+	 * Copyright (c) 2013-present, Facebook, Inc.
+	 *
+	 * This source code is licensed under the MIT license found in the
+	 * LICENSE file in the root directory of this source tree.
+	 */
+	{
+	  // By explicitly using `prop-types` you are opting into new production behavior.
+	  // http://fb.me/prop-types-in-prod
+	  module.exports = factoryWithThrowingShims();
+	}
+	});
 
 	var rngBrowser = createCommonjsModule(function (module) {
 	// Unique ID creation requires a high quality random # generator.  In the
@@ -6905,9 +6983,11 @@
 
 	class DedupeNode extends react.Component {
 	  constructor(...args) {
-	    var _temp;
+	    super(...args);
 
-	    return _temp = super(...args), _defineProperty(this, "deregister", () => {}), _defineProperty(this, "reregister", () => {
+	    _defineProperty(this, "deregister", () => {});
+
+	    _defineProperty(this, "reregister", () => {
 	      const {
 	        dedupeContext
 	      } = this;
@@ -6933,7 +7013,13 @@
 	      register(dedupeKey, data);
 
 	      this.deregister = () => deregister(dedupeKey);
-	    }), _defineProperty(this, "componentDidMount", () => this.reregister()), _defineProperty(this, "componentDidUpdate", () => this.reregister()), _defineProperty(this, "componentWillUnmount", () => this.deregister()), _temp;
+	    });
+
+	    _defineProperty(this, "componentDidMount", () => this.reregister());
+
+	    _defineProperty(this, "componentDidUpdate", () => this.reregister());
+
+	    _defineProperty(this, "componentWillUnmount", () => this.deregister());
 	  }
 
 	  get dedupeContext() {
@@ -6957,6 +7043,15 @@
 	  }
 
 	}
+
+	_defineProperty(DedupeNode, "propTypes", {
+	  context: propTypes.object.isRequired,
+	  type: propTypes.string.isRequired,
+	  // don't pass this if you only need the getDuplicate function
+	  // otherwise it's required
+	  dedupeKey: propTypes.oneOfType([propTypes.string, propTypes.number]),
+	  children: propTypes.func.isRequired
+	});
 
 	var DedupeNode$1 = (props => react.createElement(DedupeContext.Consumer, null, context => react.createElement(DedupeNode, _extends({}, props, {
 	  context: context
@@ -7129,20 +7224,39 @@
 
 	}
 
+	_defineProperty(Node, "propTypes", {
+	  item: propTypes.object.isRequired,
+	  id: propTypes.oneOfType([propTypes.string, propTypes.number]).isRequired,
+	  dedupeKey: propTypes.oneOfType([propTypes.string, propTypes.number]).isRequired,
+	  type: propTypes.string.isRequired,
+	  childrenField: propTypes.string.isRequired,
+	  index: propTypes.number.isRequired,
+	  handleDragStart: propTypes.func.isRequired,
+	  handleDragOver: propTypes.func.isRequired,
+	  handleDrop: propTypes.func.isRequired,
+	  children: propTypes.func.isRequired
+	});
+
 	class DedupeLevel extends react.Component {
 	  constructor(...args) {
-	    var _temp;
+	    super(...args);
 
-	    return _temp = super(...args), _defineProperty(this, "dedupeContext", {}), _defineProperty(this, "register", (key, data) => {
+	    _defineProperty(this, "dedupeContext", {});
+
+	    _defineProperty(this, "register", (key, data) => {
 	      this.dedupeContext = _objectSpread({}, this.dedupeContext, {
 	        [key]: data
 	      });
-	    }), _defineProperty(this, "deregister", key => {
+	    });
+
+	    _defineProperty(this, "deregister", key => {
 	      const _this$dedupeContext = this.dedupeContext,
 	            rest = _objectWithoutProperties(_this$dedupeContext, [key].map(_toPropertyKey));
 
 	      this.dedupeContext = rest;
-	    }), _defineProperty(this, "getDuplicate", key => this.dedupeContext[key] || null), _temp;
+	    });
+
+	    _defineProperty(this, "getDuplicate", key => this.dedupeContext[key] || null);
 	  }
 
 	  render() {
@@ -7160,6 +7274,12 @@
 
 	}
 
+	_defineProperty(DedupeLevel, "propTypes", {
+	  type: propTypes.string,
+	  parentContext: propTypes.object.isRequired,
+	  children: propTypes.node
+	});
+
 	var DedupeLevel$1 = (props => react.createElement(DedupeContext.Consumer, null, parentContext => react.createElement(DedupeLevel, _extends({}, props, {
 	  parentContext: parentContext
 	}))));
@@ -7175,9 +7295,7 @@
 	      type,
 	      children,
 	      renderDrop,
-	      getKey = ({
-	        id
-	      }) => id,
+	      getKey,
 	      getDedupeKey = getKey,
 	      dropOnNode,
 	      dedupeType
@@ -7234,9 +7352,24 @@
 
 	}
 
-	_defineProperty(Level, "defaultProps", {
-	  dropOnNode: true // sets node drag props to allow drops
+	_defineProperty(Level, "propTypes", {
+	  arr: propTypes.arrayOf(propTypes.object),
+	  type: propTypes.string,
+	  children: propTypes.func.isRequired,
+	  renderDrop: propTypes.func,
+	  getKey: propTypes.func,
+	  getDedupeKey: propTypes.func,
+	  dropOnNode: propTypes.bool,
+	  dedupeType: propTypes.string,
+	  field: propTypes.string
+	});
 
+	_defineProperty(Level, "defaultProps", {
+	  dropOnNode: true,
+	  // sets node drag props to allow drops
+	  getKey: ({
+	    id
+	  }) => id
 	});
 
 	const move = (type, id, dragPath, path, newIndex) => ({
@@ -7338,24 +7471,34 @@
 
 	class Root extends react.Component {
 	  constructor(...args) {
-	    var _temp;
+	    super(...args);
 
-	    return _temp = super(...args), _defineProperty(this, "state", {
+	    _defineProperty(this, "state", {
 	      dragData: null,
 	      dropInfo: {
 	        path: null,
 	        canDrop: false
 	      }
-	    }), _defineProperty(this, "eventHandled", false), _defineProperty(this, "rootKey", v4_1()), _defineProperty(this, "handleRootDragOver", () => {
+	    });
+
+	    _defineProperty(this, "eventHandled", false);
+
+	    _defineProperty(this, "rootKey", v4_1());
+
+	    _defineProperty(this, "handleRootDragOver", () => {
 	      if (!this.eventHandled) {
 	        this.setDropInfo(null, false);
 	      }
 
 	      this.eventHandled = false;
-	    }), _defineProperty(this, "handleRootDrop", () => {
+	    });
+
+	    _defineProperty(this, "handleRootDrop", () => {
 	      this.setDropInfo(null, false);
 	      this.eventHandled = false;
-	    }), _defineProperty(this, "handleNodeDragStart", (item, path, id, type) => e => this.runLowest(() => {
+	    });
+
+	    _defineProperty(this, "handleNodeDragStart", (item, path, id, type) => e => this.runLowest(() => {
 	      Object.keys(this.mapOut).forEach(key => {
 	        const mapper = this.mapOut[key];
 	        e.dataTransfer.setData(key, mapper(item, path, id, type));
@@ -7368,10 +7511,14 @@
 	          type
 	        }
 	      });
-	    })), _defineProperty(this, "handleDropZoneDragOver", (candidatePath, getDuplicate, getIndexOffset) => e => this.runLowest(() => {
+	    }));
+
+	    _defineProperty(this, "handleDropZoneDragOver", (candidatePath, getDuplicate, getIndexOffset) => e => this.runLowest(() => {
 	      e.preventDefault();
 	      this.runDropZoneDragOver(candidatePath, getDuplicate, getIndexOffset, e);
-	    })), _defineProperty(this, "runDropZoneDragOver", lodash_throttle((candidatePath, getDuplicate, getIndexOffset, e) => {
+	    }));
+
+	    _defineProperty(this, "runDropZoneDragOver", lodash_throttle((candidatePath, getDuplicate, getIndexOffset, e) => {
 	      const {
 	        path,
 	        canDrop
@@ -7379,10 +7526,14 @@
 	      this.setDropInfo(path, canDrop);
 	    }, 100, {
 	      trailing: false
-	    })), _defineProperty(this, "handleDropZoneDrop", (candidatePath, getDuplicate, getIndexOffset) => e => this.runLowest(() => {
+	    }));
+
+	    _defineProperty(this, "handleDropZoneDrop", (candidatePath, getDuplicate, getIndexOffset) => e => this.runLowest(() => {
 	      e.preventDefault();
 	      this.run(e, candidatePath, getDuplicate, getIndexOffset);
-	    })), _defineProperty(this, "run", (e, candidatePath, getDuplicate, getIndexOffset, dragData) => {
+	    }));
+
+	    _defineProperty(this, "run", (e, candidatePath, getDuplicate, getIndexOffset, dragData) => {
 	      const path = addOffset(candidatePath, extractIndexOffset(e, getIndexOffset));
 
 	      if (dragData === true) {
@@ -7424,7 +7575,7 @@
 	          canDrop: false
 	        };
 	      }
-	    }), _temp;
+	    });
 	  }
 
 	  /**
@@ -7506,6 +7657,10 @@
 	  }
 
 	  render() {
+	    const {
+	      type,
+	      id
+	    } = this.props;
 	    return react.createElement("div", {
 	      onDragOver: this.handleRootDragOver,
 	      onDrop: this.handleRootDrop,
@@ -7518,14 +7673,23 @@
 	        dropInfo: this.state.dropInfo
 	      }
 	    }, react.createElement(Level, {
-	      type: "root",
+	      type: type,
 	      arr: [{
-	        id: 'ROOT'
+	        id
 	      }]
 	    }, () => this.props.children)));
 	  }
 
 	}
+
+	_defineProperty(Root, "propTypes", {
+	  id: propTypes.oneOfType([propTypes.string, propTypes.number]).isRequired,
+	  type: propTypes.oneOfType([propTypes.string, propTypes.number]).isRequired,
+	  onChange: propTypes.func.isRequired,
+	  onError: propTypes.func,
+	  mapIn: propTypes.object,
+	  mapOut: propTypes.object
+	});
 
 	_defineProperty(Root, "defaultProps", {
 	  mapIn: {},

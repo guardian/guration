@@ -54,15 +54,10 @@ class Root extends React.Component {
   rootKey = v4();
 
   static propTypes = {
-    id: PropTypes.oneOfType([
-      PropTypes.string,
-      PropTypes.number
-    ]).isRequired,
-    type: PropTypes.oneOfType([
-      PropTypes.string,
-      PropTypes.number
-    ]).isRequired,
-    onChange: PropTypes.func.isRequired,
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    type: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    onChange: PropTypes.func,
+    onEdit: PropTypes.object,
     onError: PropTypes.func,
     mapIn: PropTypes.object,
     mapOut: PropTypes.object
@@ -71,6 +66,8 @@ class Root extends React.Component {
   static defaultProps = {
     mapIn: {},
     mapOut: {},
+    onChange: () => {},
+    onEdit: {},
     onError: () => {}
   };
 
@@ -223,7 +220,7 @@ class Root extends React.Component {
     try {
       const edits = getEdits(data, path, getDuplicate);
       if (edits.length) {
-        !dragData && this.props.onChange(edits);
+        !dragData && this.runEdits(edits);
         return { path, canDrop: true };
       }
       return { path, canDrop: false };
@@ -231,6 +228,13 @@ class Root extends React.Component {
       !dragData && this.props.onError(e.message);
       return { path, canDrop: false };
     }
+  };
+
+  runEdits = edits => {
+    this.props.onChange(edits);
+    edits.forEach((edit) =>
+      (this.props.onEdit[edit.type] || (() => {}))(edit)
+    );
   };
 
   /**
