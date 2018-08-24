@@ -135,17 +135,16 @@ A boolean that defaults to `treu`, which specifics whether `getNodeProps` will r
 
 ## Example
 
-Each `Level` will render drop zones - rendered by `renderDrop`, which received the props required for handling browser drop events - around each child. Each child will be rendered using the render prop supplied to `Level`; a single function child. This function will be passed each item in the `arr` and a second argument `getDragProps` that you can add to any of your components in order to drag it around (see example). Currently adding these props to a DOM node that wraps a `Level` component is not supported.
-
 ```js
-const renderDrop = (getProps, i) => <Drop Zone {...getProps(i)} />;
+const renderDrop = (getProps, { canDrop, isTarget }) =>
+  <DropZone {...getProps()} canDrop={canDrop} isTarget={isTarget} />;
 
 const Front = ({ front }) => (
   <Root
     id={front.id}
     type="front"
-    onChange={change => console.log(change)}
-    onError={error => console.log(error)}
+    onChange={console.log}
+    onError={console.log}
   >
     <Level
       arr={front.collections}
@@ -162,18 +161,18 @@ const Front = ({ front }) => (
               type="articleFragment"
               renderDrop={renderDrop}
             >
-              {({ title, meta: { supporting } }, afDragProps) => (
+              {({ title, meta: { supporting } }, afNodeProps) => (
                 <div>
-                  <h1 {...afDragProps()}>{title}</h1>
+                  <h1 {...afNodeProps()}>{title}</h1>
                   <Indent>
                     <Level
                       arr={supporting}
                       type="articleFragment"
                       renderDrop={renderDrop}
                     >
-                      {({ title }, sDragProps) => (
+                      {({ title }, sNodeProps) => (
                         <div>
-                          <h1 {...sDragProps()}>{title}</h1>
+                          <h1 {...sNodeProps()}>{title}</h1>
                         </div>
                       )}
                     </Level>
