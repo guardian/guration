@@ -91,7 +91,7 @@ An object whose keys represent a `type` on `e.dataTransfer.types` that can be ha
 
 An object that does the opposite of `mapIn` and describes how to transform a node into drag data. The keys on the object are the keys that will be called using `e.dataTransfer.setData(key)`, allowing drags from here to other drop zones (possibly other Guration contexts).
 
-### <Level />
+### \<Level />
 
 A `Level` is repsonsible for defining the types for a specific level in the tree as well as defining the types for the elements that _are_ currently rendered in that position. It also provides the props for draggable nodes and renders drop zones between these nodes.
 
