@@ -1,7 +1,17 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { DedupeContext } from './Context';
 
 class DedupeNode extends React.Component {
+  static propTypes = {
+    context: PropTypes.object.isRequired,
+    type: PropTypes.string.isRequired,
+    // don't pass this if you only need the getDuplicate function
+    // otherwise it's required
+    dedupeKey: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    children: PropTypes.func.isRequired
+  };
+
   get dedupeContext() {
     return this.props.context[this.props.type];
   }

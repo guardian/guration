@@ -4,6 +4,7 @@
   "main": "dist/index.js",
   "dependencies": {
     "lodash.throttle": "^4.1.1",
+    "prop-types": "^15.6.2",
     "react": "^16.3.0",
     "react-dom": "^16.3.0",
     "uuid": "^3.3.2"

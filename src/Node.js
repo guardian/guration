@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import DedupeNode from './DedupeNode';
 import { AddPathLevel } from './utils/path';
 
@@ -9,6 +10,20 @@ const getDropIndexOffset = ({ currentTarget: el, clientY }) => {
 };
 
 class Node extends React.Component {
+  static propTypes = {
+    item: PropTypes.object.isRequired,
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    dedupeKey: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+      .isRequired,
+    type: PropTypes.string.isRequired,
+    childrenField: PropTypes.string.isRequired,
+    index: PropTypes.number.isRequired,
+    handleDragStart: PropTypes.func.isRequired,
+    handleDragOver: PropTypes.func.isRequired,
+    handleDrop: PropTypes.func.isRequired,
+    children: PropTypes.func.isRequired
+  };
+
   render() {
     const {
       item,

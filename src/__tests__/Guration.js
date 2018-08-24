@@ -187,7 +187,12 @@ describe('Guration', () => {
     let error;
 
     const inst = TestRenderer.create(
-      <Root type="@@ROOT" id="@@ROOT" onError={e => (error = e)}>
+      <Root
+        type="@@ROOT"
+        id="@@ROOT"
+        onChange={() => {}}
+        onError={e => (error = e)}
+      >
         <Level arr={[{ id: 2 }]} type="a" field="children">
           {(child, getNodeProps) => {
             dragProps = getNodeProps();
@@ -219,7 +224,12 @@ describe('Guration', () => {
     let error;
 
     const inst = TestRenderer.create(
-      <Root type="@@ROOT" id="@@ROOT" onError={e => (error = e)}>
+      <Root
+        type="@@ROOT"
+        id="@@ROOT"
+        onChange={() => {}}
+        onError={e => (error = e)}
+      >
         <Level arr={[{ id: 2 }]} field="children" type="a">
           {(child, getNodeProps) => {
             dragProps = getNodeProps();
@@ -344,11 +354,12 @@ describe('Guration', () => {
     let dropProps;
     let edits;
 
-    const inst = TestRenderer.create(
+    TestRenderer.create(
       <div>
         <Root
           type="@@ROOT"
           id="@@ROOT"
+          onChange={() => {}}
           mapOut={{
             share: () => 'test'
           }}
@@ -377,7 +388,7 @@ describe('Guration', () => {
           </Level>
         </Root>
       </div>
-    ).getInstance();
+    );
 
     runDrag(nodeProps)(dropProps);
 

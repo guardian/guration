@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import Node from './Node';
 import DedupeLevel from './DedupeLevel';
 import DedupeNode from './DedupeNode';
@@ -6,8 +7,21 @@ import { RootContext } from './Context';
 import { AddPathLevel, eq } from './utils/path';
 
 class Level extends React.Component {
+  static propTypes = {
+    arr: PropTypes.arrayOf(PropTypes.object),
+    type: PropTypes.string,
+    children: PropTypes.func.isRequired,
+    renderDrop: PropTypes.func,
+    getKey: PropTypes.func,
+    getDedupeKey: PropTypes.func,
+    dropOnNode: PropTypes.bool,
+    dedupeType: PropTypes.string,
+    field: PropTypes.string
+  };
+
   static defaultProps = {
-    dropOnNode: true // sets node drag props to allow drops
+    dropOnNode: true, // sets node drag props to allow drops
+    getKey: ({ id }) => id
   };
 
   get childrenField() {
@@ -20,7 +34,7 @@ class Level extends React.Component {
       type,
       children,
       renderDrop,
-      getKey = ({ id }) => id,
+      getKey,
       getDedupeKey = getKey,
       dropOnNode,
       dedupeType

@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import v4 from 'uuid/v4';
 import throttle from 'lodash.throttle';
 import Level from './Level';
@@ -34,11 +35,12 @@ const internalMapIn = data => ({
   dropType: 'INTERNAL'
 });
 
-const internalMapOut = (item, path, id, type) => JSON.stringify({
-  id,
-  type,
-  path
-});
+const internalMapOut = (item, path, id, type) =>
+  JSON.stringify({
+    id,
+    type,
+    path
+  });
 
 class Root extends React.Component {
   state = {
@@ -50,6 +52,21 @@ class Root extends React.Component {
   };
   eventHandled = false;
   rootKey = v4();
+
+  static propTypes = {
+    id: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.number
+    ]).isRequired,
+    type: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.number
+    ]).isRequired,
+    onChange: PropTypes.func.isRequired,
+    onError: PropTypes.func,
+    mapIn: PropTypes.object,
+    mapOut: PropTypes.object
+  };
 
   static defaultProps = {
     mapIn: {},
@@ -118,7 +135,7 @@ class Root extends React.Component {
     this.runLowest(() => {
       Object.keys(this.mapOut).forEach(key => {
         const mapper = this.mapOut[key];
-        e.dataTransfer.setData(key, mapper(item, path, id, type))
+        e.dataTransfer.setData(key, mapper(item, path, id, type));
       });
 
       this.setState({
@@ -257,6 +274,7 @@ class Root extends React.Component {
   }
 
   render() {
+    const { type, id } = this.props;
     return (
       <div
         onDragOver={this.handleRootDragOver}
@@ -271,7 +289,7 @@ class Root extends React.Component {
             dropInfo: this.state.dropInfo
           }}
         >
-          <Level type="root" arr={[{ id: 'ROOT' }]}>
+          <Level type={type} arr={[{ id }]}>
             {/**
              * Level requires a function child by here we're doing nothing
              * with the params

@@ -1,7 +1,15 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { DedupeContext } from './Context';
 
 class DedupeLevel extends React.Component {
+  
+  static propTypes = {
+    type: PropTypes.string,
+    parentContext: PropTypes.object.isRequired,
+    children: PropTypes.node
+  };
+
   dedupeContext = {};
 
   register = (key, data) => {
