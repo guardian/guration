@@ -236,7 +236,11 @@ class Root extends React.Component {
 
   runEdits = edits => {
     this.props.onChange(edits);
-    edits.forEach(edit => (this.props.onEdit[edit.type] || (() => {}))(edit));
+    edits.forEach(edit => {
+      const nodeTypeHanders = this.props.onEdit[edit.payload.type] || {};
+      const editTypeHandler = nodeTypeHanders[edit.type] || (() => {});
+      editTypeHandler(edit);
+    });
   };
 
   /**

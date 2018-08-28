@@ -296,11 +296,13 @@ describe('Guration', () => {
         type="@@ROOT"
         id="@@ROOT"
         onEdit={{
-          REMOVE: p => {
-            removePayload = p;
-          },
-          INSERT: p => {
-            insertPayload = p;
+          b: {
+            REMOVE: p => {
+              removePayload = p;
+            },
+            INSERT: p => {
+              insertPayload = p;
+            }
           }
         }}
       >

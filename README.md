@@ -79,9 +79,9 @@ This will set the `childrenField` in an edit, which can allow for easier reflect
 
 This expects a callback function that will receive an array of (`edits`)[#Edits] each time an action has happened. Currently the array will have the shape of either: `[Remove, Insert]` or `[Insert]`.
 
-##### `onEdit: ?{ [string]: (edit) => void }`
+##### `onEdit: ?{ [type: string]: { [editType: string]: (edit) => void } }`
 
-An object with any of the keys `INSERT` or `REMOVE` where the values are callbacks which will only fire on specific edits as a convenience for `onChange`.
+An object whose keys are a `type` of node that may be edited and whose value is an object containing either the keys `INSERT` or `REMOVE` where the values are callbacks which will only fire on specific edits for this node type. This is a convenience for easier handling of the edits passed to `onChange`.
 
 ##### `onError: ?(error: string) => void`
 
