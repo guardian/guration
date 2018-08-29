@@ -1,6 +1,6 @@
 # Guration
 
-A module that allows you to validate drag and drop actions on a tree of data, culminating in 'edits' that describe the modification on a normalized data structure (rather than the whole tree). There are two types of edits a `Remove` and an `Insert`. The drag and drop logic is handle by the `Level` component, so reference below to drag zones and drop zones will refer to the drag zones created using the `Level` component.
+A module that allows you to validate drag and drop actions on a tree of data, culminating in 'edits' that describe the modification on a normalized data structure (rather than the whole tree). There are two types of edits a `Move` and an `Insert`. The drag and drop logic is handle by the `Level` component, so references below to drag zones and drop zones will refer to the drag zones created using the `Level` component.
 
 Note that **a valid drop doesn't changed the rendered tree**, instead the expectation is that state updates will be made in the consumer appilcation in response to these edits that cause a render to the `Guration` part of the app that then reflects these edits.
 
@@ -8,23 +8,32 @@ Note that **a valid drop doesn't changed the rendered tree**, instead the expect
 
 First it will be worth describing edits. Edits are objects that describe an update to the tree and will only be fired when they are deemed to be valid (i.e. a drop of some `type` into a position that accepts that `type`). Moves into the same position (i.e. moving an node into the drop zone either side of itself) will not fire edits, and edits that are invalid will fire errors.
 
-### `Remove`
+### `Move`
 
-A `Remove` edit will only fire as part of a pair of edits: `[Remove, Insert]`, which describes a move of an node from inside the Guration `Root` context back into another valid position. It has the following shape:
+A `Move` edit describes a move of a node from inside the Guration `Root` context back into another valid position inside the same Guration `Root` context. It has the following shape:
 
 ```js
-type Remove = {
-  type: 'REMOVE',
+type Move = {
+  type: 'MOVE',
   payload: {
-    type: string,
-    id: string,
-    path: {
+    type,
+    id,
+    from: {
       parent: {
         type: string,
         childrenField: string,
         index: number,
         id: string
       }
+    },
+    to: {
+      parent: {
+        type: string,
+        childrenField: string,
+        index: number,
+        id: string
+      },
+      index: newIndex
     }
   }
 };
@@ -32,7 +41,7 @@ type Remove = {
 
 ### `Insert`
 
-An `Insert` edit will fire either in tandem with a `Remove` edit (for a move of an item from within the `Guration` context as mentioned above), or otherwise for an insert of some item from outside that has been mapped in through [`mapIn`](#mapIn). It has the following shape:
+An `Insert` edit will fire for an insert of some item from outside that has been mapped in through [`mapIn`](#mapIn). It has the following shape:
 
 ```js
 type Insert = {
@@ -53,8 +62,6 @@ type Insert = {
 };
 ```
 
-The only difference between this and a `Insert` (aside from it's semantic intent) is that it has an `index` to move to in the payload.
-
 ## Component API
 
 ### `<Root />`
@@ -71,31 +78,27 @@ This is the root id that will be used as the parent of the whole tree and will a
 
 Similarly to the [`id`](#id) this will describe the type of the root node (again, used in edits) but this is also what limits drops into this position: only drops of the same type can be made at the root level.
 
-##### `field: ?string`
+##### `field?: string`
 
 This will set the `childrenField` in an edit, which can allow for easier reflection on the type of edit to be made.
 
-##### `onChange: ?(Edit[]) => void`
+##### `onChange?: (edit: Edit) => void`
 
-This expects a callback function that will receive an array of (`edits`)[#Edits] each time an action has happened. Currently the array will have the shape of either: `[Remove, Insert]` or `[Insert]`.
+This expects a callback function that will receive an of (`edit`)[#Edits] each time an action has happened.
 
-##### `onEdit: ?{ [type: string]: { [editType: string]: (edit) => void } }`
-
-An object whose keys are a `type` of node that may be edited and whose value is an object containing either the keys `INSERT` or `REMOVE` where the values are callbacks which will only fire on specific edits for this node type. This is a convenience for easier handling of the edits passed to `onChange`.
-
-##### `onError: ?(error: string) => void`
+##### `onError?: (error: string) => void`
 
 A callback that will recieve strings describing errors regarding invalid drops. For example, dropping an node of one type into a level of another type or dropping an node into a child of itself.
 
-##### `mapIn: ?{ [string]: string => { id: string, type: string } }`
+##### `mapIn?: { [string]: string => { id: string, type: string } }`
 
 An object whose keys represent a `type` on `e.dataTransfer.types` that can be handle by the callback that is in the value position of the object. The callback will receive any data that is found when `e.dataTranfer.getData(type)` is called and is expected to return an object of `{ id: string, type: string }` that can be used to validate and then generate an edit in a drop zone.
 
-##### `mapOut: ?{ [string]: (el: Object, type: string, id: string, path: Path[]) => string }`
+##### `mapOut?: { [string]: (el: Object, type: string, id: string, path: Path[]) => string }`
 
 An object that does the opposite of `mapIn` and describes how to transform a node into drag data. The keys on the object are the keys that will be called using `e.dataTransfer.setData(key)`, allowing drags from here to other drop zones (possibly other Guration contexts).
 
-### \<Level />
+### `<Level />`
 
 A `Level` is repsonsible for defining the types for a specific level in the tree as well as defining the types for the nodes that _are_ currently rendered in that position. It also provides the props for draggable nodes and renders drop zones between these nodes.
 
@@ -129,13 +132,13 @@ A function that returns the key from each object in the array, defaults to `({ i
 
 Specifying this on a `Level` will ensure that anything below this level that is of the same `type` and has the same `dedupeKey` will act as a move rather than an insert.
 
-##### `getDedupeKey: ?(el: T) => number | string``
+##### `getDedupeKey: ?(el: T) => number | string`
 
 The function that returns the key for comapring items for deduping, defaults to `getKey`.
 
 ##### `dropOnNode: ?boolean`
 
-A boolean that defaults to `treu`, which specifics whether `getNodeProps` will return props that allow dropping on top of the node. If this is true, dropping in the top 50% of the node will result in a drop at that node's index, and likewise dropping in the bottom 50% will result in a drop at the index after that node.
+A boolean that defaults to `true`, which specifics whether `getNodeProps` will return props that allow dropping on top of the node. If this is true, dropping in the top 50% of the node will result in a drop at that node's index, and likewise dropping in the bottom 50% will result in a drop at the index after that node.
 
 ## Example
 

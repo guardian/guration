@@ -67,8 +67,7 @@ describe('Guration', () => {
 
     runDrag(nodeProps)(dropProps, inst);
 
-    expect(edit[0].type).toEqual('REMOVE');
-    expect(edit[1].type).toEqual('INSERT');
+    expect(edit.type).toEqual('MOVE');
   });
 
   it('creates INSERT events from mapped drops', () => {
@@ -106,7 +105,7 @@ describe('Guration', () => {
       id: 2
     })(dropProps, inst);
 
-    expect(edit[0]).toEqual({
+    expect(edit).toEqual({
       type: 'INSERT',
       payload: {
         type: 'a',
@@ -161,34 +160,25 @@ describe('Guration', () => {
       id: 4
     })(dropProps, inst);
 
-    expect(edit).toEqual([
-      {
-        type: 'REMOVE',
-        payload: {
-          id: 4,
-          type: 'a',
-          path: {
-            parent: {
-              childrenField: 'children2',
-              id: 3,
-              index: 0,
-              type: 'a'
-            }
+    expect(edit).toEqual({
+      payload: {
+        from: {
+          parent: {
+            childrenField: 'children2',
+            id: 3,
+            index: 0,
+            type: 'a'
           }
-        }
+        },
+        id: 4,
+        to: {
+          parent: { id: 3, index: 0, type: 'a', childrenField: 'children2' },
+          index: 1
+        },
+        type: 'a'
       },
-      {
-        type: 'INSERT',
-        payload: {
-          id: 4,
-          type: 'a',
-          path: {
-            parent: { id: 3, index: 0, type: 'a', childrenField: 'children2' },
-            index: 1
-          }
-        }
-      }
-    ]);
+      type: 'MOVE'
+    });
   });
 
   it('does not allow moves of a node to a subPath of that node', () => {
@@ -281,53 +271,7 @@ describe('Guration', () => {
 
     runDrag(dragProps)(dropProps, inst);
 
-    expect(edit[1].payload.path.index).toBe(2);
-  });
-
-  it('fires onEdits for only the correct edits', () => {
-    let dragProps;
-    let dropProps;
-    let removePayload;
-    let insertPayload;
-    let edit;
-
-    const inst = TestRenderer.create(
-      <Root
-        type="@@ROOT"
-        id="@@ROOT"
-        onEdit={{
-          b: {
-            REMOVE: p => {
-              removePayload = p;
-            },
-            INSERT: p => {
-              insertPayload = p;
-            }
-          }
-        }}
-      >
-        <Level
-          type="b"
-          arr={[{ id: 1 }, { id: 2 }, { id: 3 }]}
-          renderDrop={getDropProps => {
-            dropProps = getDropProps();
-          }}
-        >
-          {(child, getNodeProps, i) => {
-            if (i === 0) {
-              dragProps = getNodeProps();
-            }
-
-            return false;
-          }}
-        </Level>
-      </Root>
-    ).getInstance();
-
-    runDrag(dragProps)(dropProps, inst);
-
-    expect(removePayload.payload.path.index).toBe(undefined);
-    expect(insertPayload.payload.path.index).toBe(2);
+    expect(edit.payload.to.index).toBe(2);
   });
 
   it('does not create MOVE events when moves will have no impact', () => {
@@ -398,7 +342,7 @@ describe('Guration', () => {
   it('creates inserts between roots', () => {
     let nodeProps;
     let dropProps;
-    let edits;
+    let edit;
 
     TestRenderer.create(
       <div>
@@ -420,7 +364,7 @@ describe('Guration', () => {
           type="@@ROOT"
           id="@@ROOT"
           mapIn={{ share: text => ({ id: text, type: 'a' }) }}
-          onChange={e => (edits = e)}
+          onChange={e => (edit = e)}
         >
           <Level
             type="a"
@@ -437,6 +381,6 @@ describe('Guration', () => {
 
     runDrag(nodeProps)(dropProps);
 
-    expect(edits[0].type).toBe('INSERT');
+    expect(edit.type).toBe('INSERT');
   });
 });

@@ -5,7 +5,7 @@ import throttle from 'lodash.throttle';
 import Level from './Level';
 import { RootContext } from './Context';
 import { addOffset, eq } from './utils/path';
-import { getEdits } from './utils/edit';
+import { getEdit } from './utils/edit';
 
 const extractIndexOffset = (e, getIndexOffset) =>
   typeof getIndexOffset === 'function' ? getIndexOffset(e) : getIndexOffset;
@@ -58,7 +58,6 @@ class Root extends React.Component {
     type: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     field: PropTypes.string,
     onChange: PropTypes.func,
-    onEdit: PropTypes.object,
     onError: PropTypes.func,
     mapIn: PropTypes.object,
     mapOut: PropTypes.object
@@ -68,7 +67,6 @@ class Root extends React.Component {
     mapIn: {},
     mapOut: {},
     onChange: () => {},
-    onEdit: {},
     onError: () => {}
   };
 
@@ -222,9 +220,9 @@ class Root extends React.Component {
     }
 
     try {
-      const edits = getEdits(data, path, getDuplicate);
-      if (edits.length) {
-        !dragData && this.runEdits(edits);
+      const edit = getEdit(data, path, getDuplicate);
+      if (edit) {
+        !dragData && this.props.onChange(edit);
         return { path, canDrop: true };
       }
       return { path, canDrop: false };
@@ -232,15 +230,6 @@ class Root extends React.Component {
       !dragData && this.props.onError(e.message);
       return { path, canDrop: false };
     }
-  };
-
-  runEdits = edits => {
-    this.props.onChange(edits);
-    edits.forEach(edit => {
-      const nodeTypeHanders = this.props.onEdit[edit.payload.type] || {};
-      const editTypeHandler = nodeTypeHanders[edit.type] || (() => {});
-      editTypeHandler(edit);
-    });
   };
 
   /**
