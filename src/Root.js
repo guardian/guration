@@ -1,50 +1,48 @@
-// @flow
-
-import React, { type Node as ReactNode } from 'react';
-import throttle from 'lodash.throttle';
+import React from 'react';
+import PropTypes from 'prop-types';
 import v4 from 'uuid/v4';
-import { RootContext, PathContext } from './Context';
-import Node from './Node';
-import { addOffset, eq } from './utils/PathUtils';
-import { type Path } from './types/Path';
-import { type InsertData, type MoveData } from './types/Data';
-import { type ChildCountSpec } from './types/Children';
-import { type Edit } from './Edits';
-import { type GetDuplicate } from './Dedupe';
-import { getEdits } from './utils/EditUtils';
+import throttle from 'lodash.throttle';
+import Level from './Level';
+import { RootContext } from './Context';
+import { addOffset, eq } from './utils/path';
+import { getEdits } from './utils/edit';
 
-const INTERNAL_TRANSFER_TYPE = '@@TRANSFER';
+const extractIndexOffset = (e, getIndexOffset) =>
+  typeof getIndexOffset === 'function' ? getIndexOffset(e) : getIndexOffset;
 
-type RootProps = {
-  type: string,
-  id: string,
-  onChange: (edits: Edit[]) => void,
-  onError: (error: string) => void,
-  dropMappers: {
-    [string]: (data: string) => InsertData | string
-  },
-  rootKey: string,
-  children: ReactNode
-};
+const sanitizeExternalDrops = mappers =>
+  Object.entries(mappers).reduce(
+    (acc, [key, mapper]) => ({
+      ...acc,
+      [key]: text => {
+        const data = mapper(text);
 
-type InsertDrop = InsertData & { dropType: 'INSERT' };
-type MoveDrop = MoveData & { dropType: 'MOVE' };
+        if (typeof data === 'string') {
+          return data;
+        }
 
-type ValidDrop = InsertDrop | MoveDrop;
+        return {
+          ...data,
+          dropType: 'EXTERNAL'
+        };
+      }
+    }),
+    {}
+  );
 
-type RootState = {
-  dragData: ?MoveDrop,
-  dropInfo: {
-    path: ?(Path[]),
-    canDrop: boolean
-  }
-};
+const internalMapIn = data => ({
+  ...JSON.parse(data),
+  dropType: 'INTERNAL'
+});
 
-class Root extends React.Component<RootProps, RootState> {
-  rootKey: string;
+const internalMapOut = (item, type, id, path) =>
+  JSON.stringify({
+    id,
+    type,
+    path
+  });
 
-  eventHandled = false;
-
+class Root extends React.Component {
   state = {
     dragData: null,
     dropInfo: {
@@ -52,91 +50,38 @@ class Root extends React.Component<RootProps, RootState> {
       canDrop: false
     }
   };
+  eventHandled = false;
+  rootKey = v4();
+
+  static propTypes = {
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    type: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    field: PropTypes.string,
+    onChange: PropTypes.func,
+    onEdit: PropTypes.object,
+    onError: PropTypes.func,
+    mapIn: PropTypes.object,
+    mapOut: PropTypes.object
+  };
 
   static defaultProps = {
-    onError: () => {},
-    dropMappers: {}
+    mapIn: {},
+    mapOut: {},
+    onChange: () => {},
+    onEdit: {},
+    onError: () => {}
   };
 
-  constructor(props: RootProps) {
-    super(props);
-    this.rootKey = v4();
-  }
-
-  runLowestOnly = (fn: () => void) => {
-    if (this.eventHandled) {
-      return;
-    }
-    this.eventHandled = true;
-    fn();
-  };
-
-  handleDragStart = (path: Path[], type: string) => (e: DragEvent) => {
-    if (!e.dataTransfer) {
-      return;
-    }
-    const { rootKey } = this;
-    const { id } = path[path.length - 1];
-    e.dataTransfer.setData(
-      INTERNAL_TRANSFER_TYPE,
-      JSON.stringify({
-        rootKey,
-        path,
-        id, // set this for moving between roots
-        type
-      })
-    );
-
-    // set this as we can't inspect dataTransfer on dragover
-    this.setState({
-      dragData: {
-        dropType: 'MOVE',
-        rootKey,
-        path,
-        type
-      }
-    });
-  };
-
-  get dropMappers(): { [string]: (text: string) => ValidDrop | string } {
-    const { dropMappers } = this.props;
-    const insertMappers = Object.keys(dropMappers).reduce(
-      (acc, key) => ({
-        ...acc,
-        [key]: (text: string): string | InsertDrop => {
-          const data = dropMappers[key](text);
-
-          if (typeof data === 'string') {
-            return data;
-          }
-
-          return {
-            ...data,
-            dropType: 'INSERT'
-          };
-        }
-      }),
-      {}
-    );
-
-    return {
-      ...insertMappers,
-      [INTERNAL_TRANSFER_TYPE]: (data): ValidDrop => {
-        const json = JSON.parse(data);
-        return {
-          ...json,
-          dropType: this.rootKey === json.rootKey ? 'MOVE' : 'INSERT'
-        };
-      }
-    };
-  }
-
-  setDropInfo(path: ?(Path[]), canDrop: boolean) {
-    const { path: dropPath } = this.state.dropInfo;
+  /**
+   * This wraps set state to make sure we don't call it too much and keep
+   * rerendering, only changing the drop state if things have actually changed
+   */
+  setDropInfo(path, canDrop) {
+    const { path: prevPath } = this.state.dropInfo;
     if (
-      (!path && dropPath) ||
-      (path && !dropPath) ||
-      (path && dropPath && !eq(path, dropPath))
+      (!path && prevPath) ||
+      (path && !prevPath) ||
+      (path && prevPath && !eq(path, prevPath))
     ) {
       this.setState({
         dropInfo: {
@@ -147,60 +92,91 @@ class Root extends React.Component<RootProps, RootState> {
     }
   }
 
-  getDropData(e: DragEvent): ValidDrop | string {
-    const { dataTransfer } = e;
-
-    if (!dataTransfer) {
-      return 'Unable to drop';
+  /**
+   * This uses event bubbling to make sure we're only handling drops for the
+   * lowest handler (so we can drop into nested dropzones)
+   *
+   * When the event bubbles outside of the root we reset the `eventHandled` flag
+   */
+  runLowest(fn) {
+    if (!this.eventHandled) {
+      this.eventHandled = true;
+      fn();
     }
-
-    const type = Object.keys(this.dropMappers).find(key =>
-      dataTransfer.getData(key)
-    );
-
-    if (!type) {
-      return 'Unable to drop this';
-    }
-
-    return this.dropMappers[type](dataTransfer.getData(type));
   }
 
-  handleDragOver = (
-    candidatePath: Path[],
-    getDuplicate: GetDuplicate,
-    childInfo: ?ChildCountSpec,
-    getIndexOffset: ?(e: DragEvent) => number
-  ) => (e: DragEvent) => {
-    this.runLowestOnly(() => {
-      e.preventDefault();
-      this.runDragOver(
-        candidatePath,
-        getDuplicate,
-        childInfo,
-        getIndexOffset,
-        e
-      );
-    });
+  /**
+   * When a dragover event happens that has not been handled by a nodeDragOver
+   * we are not in a position to dop anything
+   */
+  handleRootDragOver = () => {
+    if (!this.eventHandled) {
+      this.setDropInfo(null, false);
+    }
+    this.eventHandled = false;
   };
 
-  runDragOver = throttle(
-    (
-      candidatePath: Path[],
-      getDuplicate: GetDuplicate,
-      childInfo: ?ChildCountSpec,
-      getIndexOffset: ?(e: DragEvent) => number,
-      e: DragEvent
-    ) => {
-      const indexOffset = getIndexOffset ? getIndexOffset(e) : 0;
-      const path = addOffset(candidatePath, indexOffset);
+  /**
+   * When a drop happens anywhere set event handle to false
+   */
+  handleRootDrop = () => {
+    this.setDropInfo(null, false);
+    this.eventHandled = false;
+  };
 
-      let edits = [];
-      try {
-        edits = this.state.dragData
-          ? getEdits(this.state.dragData, path, getDuplicate, childInfo)
-          : [];
-      } catch (e) {}
-      this.setDropInfo(path, !!edits.length);
+  /**
+   * This gets passed to all the nodes and allows them to say where they are
+   * being dragged from and what type they are to allows us to show invalid
+   * drops in the UI while dragging
+   */
+  handleNodeDragStart = (item, path, id, type) => e =>
+    this.runLowest(() => {
+      Object.keys(this.mapOut).forEach(key => {
+        const mapper = this.mapOut[key];
+        const val = mapper(item, type, id, path);
+        if (typeof val === 'string') {
+          e.dataTransfer.setData(key, val);
+        }
+      });
+
+      this.setState({
+        dragData: {
+          dropType: 'INTERNAL',
+          rootKey: this.rootKey,
+          path,
+          type
+        }
+      });
+    });
+
+  /**
+   * This gets run be each drop zone so that we know when we're hovering a drop
+   * zone and we can find out the path of the drop zone we're hovering
+   *
+   * A drop zone may be a Node so getIndexOffset allows it to adjust where the
+   * drop happens based on it's position over the node
+   * top 50% = 0, bottom 50% = 1
+   *
+   * Ultimately this is responsible for updating the state to show whether we
+   * can drop here
+   */
+  handleDropZoneDragOver = (candidatePath, getDuplicate, getIndexOffset) => e =>
+    this.runLowest(() => {
+      e.preventDefault();
+      this.runDropZoneDragOver(candidatePath, getDuplicate, getIndexOffset, e);
+    });
+
+  runDropZoneDragOver = throttle(
+    (candidatePath, getDuplicate, getIndexOffset, e) => {
+      const { path, canDrop } = this.run(
+        e,
+        candidatePath,
+        getDuplicate,
+        getIndexOffset,
+        this.state.dragData || true
+      );
+
+      this.setDropInfo(path, canDrop);
     },
     100,
     {
@@ -208,85 +184,132 @@ class Root extends React.Component<RootProps, RootState> {
     }
   );
 
-  handleDrop = (
-    candidatePath: Path[],
-    getDuplicate: GetDuplicate,
-    childInfo: ?ChildCountSpec,
-    getIndexOffset: ?(e: DragEvent) => number
-  ) => (e: DragEvent) => {
-    this.runLowestOnly(() => {
-      const { dataTransfer } = e;
+  /**
+   * This is similar to handleDropZoneDragOver but it's guaranteed to run the
+   * handlers
+   */
+  handleDropZoneDrop = (candidatePath, getDuplicate, getIndexOffset) => e =>
+    this.runLowest(() => {
+      e.preventDefault();
+      this.run(e, candidatePath, getDuplicate, getIndexOffset);
+    });
 
-      if (!dataTransfer) {
-        return;
+  /**
+   * This method runs the drops
+   * If dragData is truthy we're dragging and not dropping so we don't actually
+   * want to run the the change / error handler, we just want to know whether
+   * the drop would be valid and where the drop would be headed
+   *
+   * If dragData is exactly `true` then we're dragging but not from an internal
+   * drag and because we can't inspect `dataTransfer` on dragover we'll just
+   * have to permit any drop
+   */
+  run = (e, candidatePath, getDuplicate, getIndexOffset, dragData) => {
+    const path = addOffset(
+      candidatePath,
+      extractIndexOffset(e, getIndexOffset)
+    );
+
+    if (dragData === true) {
+      return { path, canDrop: true };
+    }
+
+    const data = dragData || this.getDropData(e);
+
+    if (typeof data === 'string') {
+      !dragData && this.props.onError(data);
+      return { path, canDrop: false };
+    }
+
+    try {
+      const edits = getEdits(data, path, getDuplicate);
+      if (edits.length) {
+        !dragData && this.runEdits(edits);
+        return { path, canDrop: true };
       }
+      return { path, canDrop: false };
+    } catch (e) {
+      !dragData && this.props.onError(e.message);
+      return { path, canDrop: false };
+    }
+  };
 
-      // TODO: separate this logic and run it on dragover as well so that
-      // drop path can be set to null if things don't validate, meaning drop
-      // zones won't highlight
-
-      const indexOffset = getIndexOffset ? getIndexOffset(e) : 0;
-      const path = addOffset(candidatePath, indexOffset);
-
-      const data = this.getDropData(e);
-
-      if (typeof data === 'string') {
-        this.props.onError(data);
-        return;
-      }
-
-      try {
-        const edits = getEdits(data, path, getDuplicate, childInfo);
-        if (edits.length) {
-          this.props.onChange(edits);
-        }
-      } catch (e) {
-        this.props.onError(e.message);
-      }
+  runEdits = edits => {
+    this.props.onChange(edits);
+    edits.forEach(edit => {
+      const nodeTypeHanders = this.props.onEdit[edit.payload.type] || {};
+      const editTypeHandler = nodeTypeHanders[edit.type] || (() => {});
+      editTypeHandler(edit);
     });
   };
 
+  /**
+   * All of the functions that map a drop to a node, the key being the
+   * key on the `dataTransfer` object that this mapper can handle
+   */
+  get mapIn() {
+    return {
+      ...sanitizeExternalDrops(this.props.mapIn),
+      [this.rootKey]: internalMapIn
+    };
+  }
+
+  /**
+   * All of the functions that map a node to a drag, the key being the
+   * key on the `dataTransfer` object that this mapper will create
+   */
+  get mapOut() {
+    return {
+      ...this.props.mapOut,
+      [this.rootKey]: internalMapOut
+    };
+  }
+
+  // TODO: add mapOut
+
+  /**
+   * Runs through the inMappers to get the data
+   */
+  getDropData(e) {
+    const { mapIn } = this;
+    const type = Object.keys(mapIn).find(key => e.dataTransfer.getData(key));
+
+    if (!type) {
+      return `Unable to drop this: unknown drop type`;
+    }
+
+    const mapper = mapIn[type];
+
+    return mapper(e.dataTransfer.getData(type));
+  }
+
   render() {
-    const { type, id, children } = this.props;
+    const { type, field, id } = this.props;
     return (
       <div
-        onDrop={() => {
-          this.setDropInfo(null, false);
-        }}
-        onDragOver={() => {
-          if (!this.eventHandled) {
-            this.setDropInfo(null, false);
-          }
-          this.eventHandled = false;
-        }}
-        onDragEnd={() => {
-          this.eventHandled = false;
-          this.setDropInfo(null, false);
-        }}
+        onDragOver={this.handleRootDragOver}
+        onDrop={this.handleRootDrop}
+        onDragEnd={this.handleRootDrop}
       >
-        <PathContext.Consumer>
-          {({ ...pathContext }) => (
-            <PathContext.Provider value={{ ...pathContext, type }}>
-              <RootContext.Provider
-                value={{
-                  handleDragStart: this.handleDragStart,
-                  handleDrop: this.handleDrop,
-                  handleDragOver: this.handleDragOver,
-                  dropInfo: this.state.dropInfo
-                }}
-              >
-                <Node type={type} id={id} index={0}>
-                  {children}
-                </Node>
-              </RootContext.Provider>
-            </PathContext.Provider>
-          )}
-        </PathContext.Consumer>
+        <RootContext.Provider
+          value={{
+            handleDragStart: this.handleNodeDragStart,
+            handleDragOver: this.handleDropZoneDragOver,
+            handleDrop: this.handleDropZoneDrop,
+            dropInfo: this.state.dropInfo
+          }}
+        >
+          <Level type={type} field={field} arr={[{ id }]}>
+            {/**
+             * Level requires a function child by here we're doing nothing
+             * with the params
+             */}
+            {() => this.props.children}
+          </Level>
+        </RootContext.Provider>
       </div>
     );
   }
 }
-
-export type { ValidDrop };
 
 export default Root;

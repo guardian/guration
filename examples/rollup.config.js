@@ -20,7 +20,7 @@ export default examples.map(example => ({
   plugins: [
     babel({
       babelrc: false,
-      presets: ['@babel/react', '@babel/flow'],
+      presets: ['@babel/react'],
       plugins: [
         '@babel/proposal-class-properties',
         '@babel/proposal-object-rest-spread'
@@ -33,7 +33,18 @@ export default examples.map(example => ({
       browser: true
     }),
     commonjs({
-      include: 'node_modules/**'
+      include: 'node_modules/**',
+      namedExports: {
+        'node_modules/react/index.js': [
+          'Component',
+          'PureComponent',
+          'Fragment',
+          'Children',
+          'createElement',
+          'createContext',
+          'forwardRef'
+        ]
+      }
     })
   ]
 }));

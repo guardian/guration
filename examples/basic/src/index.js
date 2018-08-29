@@ -1,5 +1,3 @@
-// @flow
-
 import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './containers/App';
@@ -8,6 +6,7 @@ const front = {
   id: '1',
   title: 'Front',
   collections: [
+    { id: '2', title: 'Coll 2', groups: [] },
     {
       id: '1',
       title: 'Coll 1',
@@ -26,7 +25,8 @@ const front = {
               meta: { supporting: [{ id: '6', title: 'Af 6' }] }
             }
           ]
-        },{
+        },
+        {
           id: 'medium',
           articleFragments: [
             {
@@ -43,6 +43,6 @@ const front = {
 
 const root = document.getElementById('root');
 
-if (root) {  
+if (root) {
   ReactDOM.render(<App front={front} />, root);
 }

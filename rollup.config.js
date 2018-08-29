@@ -1,7 +1,6 @@
 import babel from 'rollup-plugin-babel';
 import resolve from 'rollup-plugin-node-resolve';
 import commonjs from 'rollup-plugin-commonjs';
-import defs from 'rollup-plugin-flow-defs';
 
 export default [
   {
@@ -10,7 +9,23 @@ export default [
       file: 'dist/index.js',
       format: 'cjs'
     },
-    plugins: [babel(), defs()],
+    plugins: [
+      babel(),
+      commonjs({
+        include: 'node_modules/**',
+        namedExports: {
+          'node_modules/react/index.js': [
+            'Component',
+            'PureComponent',
+            'Fragment',
+            'Children',
+            'createElement',
+            'createContext',
+            'forwardRef'
+          ]
+        }
+      })
+    ],
     external: ['react', 'lodash/fp/get', 'lodash/fp/set']
-  },
+  }
 ];
