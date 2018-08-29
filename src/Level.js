@@ -70,6 +70,9 @@ class Level extends React.Component {
       dedupeType
     } = this.props;
 
+    let didWarnKey = false;
+    let didWarnDedupeKey = false;
+
     return (
       <DedupeLevel type={dedupeType}>
         <DedupeNode type={type}>
@@ -86,16 +89,18 @@ class Level extends React.Component {
                     const key = getKey(item);
                     const dedupeKey = getDedupeKey(item);
 
-                    if (isUndefined(key)) {
+                    if (isUndefined(key) && !didWarnKey) {
                       console.warn(
-                        `\`getKey\` is returning undefined for type ${type} at index ${i}. This may cause unnecessary re-renders for these nodes adn will cause React errors in development.`
+                        `\`getKey\` is returning undefined for type ${type}. This may cause unnecessary re-renders for these nodes and will cause React errors in development.`
                       );
+                      didWarnKey = true;
                     }
 
-                    if (isUndefined(dedupeKey)) {
+                    if (isUndefined(dedupeKey) && !didWarnDedupeKey) {
                       console.warn(
-                        `\`getDedupeKey\` is returning undefined for type ${type} at index ${i}. This will cause issues when trying to dedupe new nodes in this context.`
+                        `\`getDedupeKey\` is returning undefined for type ${type}. This will cause issues when trying to dedupe new nodes in this context.`
                       );
+                      didWarnDedupeKey = true;
                     }
 
                     return (
