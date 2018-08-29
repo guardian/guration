@@ -1,7 +1,7 @@
 import { isSubPath, pathForMove, hasMoved } from './path';
-import { remove, insert } from '../edits';
+import { move, insert } from '../edits';
 
-const getEdits = (inputData, inputPath, getDuplicate) =>
+const getEdit = (inputData, inputPath, getDuplicate) =>
   inputData.dropType === 'INTERNAL'
     ? handleMove(inputData.path, inputPath)
     : handleInsert(inputData, inputPath, getDuplicate);
@@ -22,11 +22,8 @@ const handleMove = (prevPath, nextPath) => {
   const { index } = movePath[movePath.length - 1];
 
   return hasMoved(prevPath, nextPath)
-    ? [
-        remove(type, id, prevPath),
-        insert(type, id, movePath, index)
-      ]
-    : [];
+    ? move(type, id, prevPath, movePath, index)
+    : null;
 };
 
 const handleInsert = ({ type: dragType, id }, path, getDuplicate) => {
@@ -40,7 +37,7 @@ const handleInsert = ({ type: dragType, id }, path, getDuplicate) => {
 
   return duplicate
     ? handleMove(duplicate.path, path)
-    : [insert(type, id, path, index)].filter(Boolean);
+    : insert(type, id, path, index);
 };
 
-export { getEdits };
+export { getEdit };

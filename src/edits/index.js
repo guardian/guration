@@ -1,24 +1,27 @@
-const remove = (type, id, path) => ({
-  type: 'REMOVE',
+const move = (type, id, dragPath, path, newIndex) => ({
+  type: 'MOVE',
   payload: {
     type,
     id,
-    path: {
-      parent: path[path.length - 2]
+    from: {
+      parent: dragPath[dragPath.length - 2]
+    },
+    to: {
+      parent: path[path.length - 2],
+      index: newIndex
     }
   }
 });
 
-const insert = (type, id, path, index) => ({
+const insert = (type, id, dragPath, newIndex) => ({
   type: 'INSERT',
   payload: {
     type,
     id,
     path: {
-      parent: path[path.length - 2],
-      index
+      parent: dragPath[dragPath.length - 2],
+      index: newIndex
     }
   }
 });
-
-export { remove, insert };
+export { move, insert };
