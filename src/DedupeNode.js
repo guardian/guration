@@ -8,7 +8,10 @@ class DedupeNode extends React.Component {
     type: PropTypes.string.isRequired,
     // don't pass this if you only need the getDuplicate function
     // otherwise it's required
-    dedupeKey: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    //
+    // we actually warn about this more nicely in a parent so remove warning
+    // from here
+    // dedupeKey: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     children: PropTypes.func.isRequired
   };
 
