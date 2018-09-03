@@ -3,6 +3,7 @@
 import React from 'react';
 import type { Node as ReactNode } from 'react';
 import Node from './Node';
+import type { NodeChildren } from './Node';
 import DedupeLevel from './DedupeLevel';
 import GetDuplicate from './GetDuplicate';
 import { RootContext } from './Context';
@@ -61,7 +62,7 @@ type DropContext = {
 type LevelProps<T> = {|
   arr: T[],
   type: string,
-  children: *,
+  children: NodeChildren<T>,
   renderDrop?: DropRenderer,
   getKey: (node: T) => string,
   getDedupeKey?: (node: T) => string,
@@ -73,7 +74,7 @@ type LevelProps<T> = {|
 class Level<T> extends React.Component<LevelProps<T>> {
   static defaultProps = {
     dropOnNode: true, // sets node drag props to allow drops
-    getKey: <T: { id: string }>({ id }: T) => id
+    getKey: <U: { id: string }>({ id }: U) => id
   };
 
   get childrenField() {
