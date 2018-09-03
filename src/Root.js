@@ -70,7 +70,7 @@ const internalMapOut = <T>(item: T, type: string, id: string, path: Path[]) =>
 type RootProps<T: Object> = {
   id: string,
   type: string,
-  field: string,
+  field?: string,
   onChange: (edit: Edit) => void,
   onError: (error: string) => void,
   mapIn: InMap,
