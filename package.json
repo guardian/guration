@@ -1,6 +1,6 @@
 {
   "name": "@guardian/guration",
-  "version": "3.0.1",
+  "version": "3.1.0",
   "main": "dist/index.js",
   "dependencies": {
     "@babel/preset-flow": "^7.0.0",
