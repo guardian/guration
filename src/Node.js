@@ -1,29 +1,60 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import DedupeNode from './DedupeNode';
-import { AddPathLevel } from './utils/path';
+// @flow
 
-const getDropIndexOffset = ({ currentTarget: el, clientY }) => {
+import React from 'react';
+import type { Node as ReactNode } from 'react';
+import DedupeNode from './DedupeNode';
+import type { EventType, DuplicateGetter, IndexOffsetGetter } from './types';
+import AddPathLevel from './utils/AddPathLevel';
+import type { Path } from './utils/Path';
+
+const getDropIndexOffset = ({ currentTarget: el, clientY }: EventType) => {
   const { top, height } = el.getBoundingClientRect();
   const y = clientY - top;
   return y > height / 2 ? 1 : 0;
 };
 
-class Node extends React.Component {
-  static propTypes = {
-    item: PropTypes.object.isRequired,
-    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-    dedupeKey: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
-      .isRequired,
-    type: PropTypes.string.isRequired,
-    childrenField: PropTypes.string.isRequired,
-    index: PropTypes.number.isRequired,
-    handleDragStart: PropTypes.func.isRequired,
-    handleDragOver: PropTypes.func.isRequired,
-    handleDrop: PropTypes.func.isRequired,
-    children: PropTypes.func.isRequired
-  };
+type DOMNodeProps = {
+  draggable: boolean,
+  onDragStart: (e: EventType) => void,
+  onDragOver: ?(e: EventType) => void,
+  onDrop: ?(e: EventType) => void
+};
 
+type NodeProps<T> = {
+  item: T,
+  id: string,
+  dedupeKey: string,
+  type: string,
+  childrenField: string,
+  index: number,
+  handleDragStart: (
+    item: T,
+    path: Path[],
+    id: string,
+    type: string
+  ) => (e: EventType) => void,
+  handleDragOver:
+    | ((
+        candidatePath: Path[],
+        getDuplicate: DuplicateGetter,
+        getIndexOffset: IndexOffsetGetter
+      ) => (e: EventType) => void)
+    | false,
+  handleDrop:
+    | ((
+        candidatePath: Path[],
+        getDuplicate: DuplicateGetter,
+        getIndexOffset: IndexOffsetGetter
+      ) => (e: EventType) => void)
+    | false,
+  children: (
+    node: T,
+    getNodeProps: () => DOMNodeProps,
+    index: number
+  ) => ReactNode
+};
+
+class Node<T> extends React.Component<NodeProps<T>> {
   render() {
     const {
       item,
@@ -45,14 +76,19 @@ class Node extends React.Component {
         index={index}
       >
         {path => (
-          <DedupeNode dedupeKey={dedupeKey} type={type} data={{ index, path }}>
+          <DedupeNode
+            dedupeKey={dedupeKey}
+            type={type}
+            index={index}
+            path={path}
+          >
             {getDuplicate =>
               children(
                 item,
                 () => ({
                   draggable: true,
                   onDragStart: handleDragStart(item, path, id, type),
-                  ...(handleDrop
+                  ...(handleDrop && handleDragOver
                     ? {
                         onDrop: handleDrop(
                           path,

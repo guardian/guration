@@ -1,42 +1,13 @@
-import React from 'react';
-import { PathContext } from '../Context';
+// @flow
 
-const addChildrenFieldToParent = (path, childrenField, type, id, index) => {
-  const parent = path[path.length - 1];
-  return [
-    ...path.slice(0, path.length - 1),
-    ...(parent
-      ? [
-          {
-            ...parent,
-            childrenField
-          }
-        ]
-      : []),
-    { type, id, index }
-  ];
+type Path = {
+  id: string,
+  index: number,
+  type: string,
+  childrenField?: string
 };
 
-const AddPathLevel = ({ type, id, index, childrenField, children }) => (
-  <PathContext.Consumer>
-    {path => {
-      const newPath = addChildrenFieldToParent(
-        path,
-        childrenField,
-        type,
-        id,
-        index
-      );
-      return (
-        <PathContext.Provider value={newPath}>
-          {children(newPath)}
-        </PathContext.Provider>
-      );
-    }}
-  </PathContext.Consumer>
-);
-
-const elEq = (a, b, checkChildren = false) => {
+const elEq = (a: Path, b: Path, checkChildren: boolean = false) => {
   const { index: i1, type: t1, childrenField: c1 } = a;
   const { index: i2, type: t2, childrenField: c2 } = b;
 
@@ -50,16 +21,16 @@ const elEq = (a, b, checkChildren = false) => {
   );
 };
 
-const eq = (a, b) =>
+const eq = (a: Path[], b: Path[]) =>
   a.length === b.length &&
   a.every((el, i) => elEq(el, b[i], i !== a.length - 1));
 
-const isSubPath = (path, candidate) =>
+const isSubPath = (path: Path[], candidate: Path[]) =>
   candidate.length > path.length &&
   !!path.length &&
   path.every((el, i) => elEq(el, candidate[i], i !== path.length - 1));
 
-const isSibling = (path, candidate) =>
+const isSibling = (path: Path[], candidate: Path[]) =>
   candidate.length === path.length &&
   !path.some((el, i) => {
     const { index: i1, type: t1, childrenField: c1 } = el;
@@ -74,7 +45,7 @@ const isSibling = (path, candidate) =>
     );
   });
 
-const pathForMove = (source, target) => {
+const pathForMove = (source: Path[], target: Path[]) => {
   const newPath = [];
 
   for (let i = 0; i < target.length; i += 1) {
@@ -95,7 +66,7 @@ const pathForMove = (source, target) => {
   return newPath;
 };
 
-const hasMoved = (prevPath, nextPath) => {
+const hasMoved = (prevPath: Path[], nextPath: Path[]) => {
   if (prevPath.length !== nextPath.length) {
     return true;
   }
@@ -122,7 +93,7 @@ const hasMoved = (prevPath, nextPath) => {
   return false;
 };
 
-const addOffset = (candidatePath, offset) => {
+const addOffset = (candidatePath: Path[], offset: number) => {
   const parent = candidatePath[candidatePath.length - 1];
   return [
     ...candidatePath.slice(0, candidatePath.length - 1),
@@ -133,8 +104,9 @@ const addOffset = (candidatePath, offset) => {
   ];
 };
 
+export type { Path };
+
 export {
-  AddPathLevel,
   isSubPath,
   isSibling,
   pathForMove,
