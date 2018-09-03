@@ -113,4 +113,8 @@ class Node<T> extends React.Component<NodeProps<T>> {
   }
 }
 
+type NodeChildren<T> = $ElementType<NodeProps<T>, 'children'>;
+
+export type { NodeChildren };
+
 export default Node;

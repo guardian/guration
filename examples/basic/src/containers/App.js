@@ -1,3 +1,5 @@
+// @flow
+
 import React from 'react';
 import { Root, Level } from '../../../../src';
 import DragZone from '../components/DragZone';
@@ -10,7 +12,41 @@ const renderDrop = (getDropProps, { isTarget, canDrop }) => (
   <DropZone {...getDropProps()} isOver={isTarget} canDrop={canDrop} />
 );
 
-const App = ({ front }) => (
+type Supporting = {
+  id: string,
+  title: string
+};
+
+type ArticleFragment = {
+  id: string,
+  title: string,
+  meta: {
+    supporting: Supporting[]
+  }
+};
+
+type Group = {
+  id: string,
+  articleFragments: ArticleFragment[]
+};
+
+type Collection = {
+  id: string,
+  title: string,
+  groups: Group[]
+};
+
+type Front = {
+  id: string,
+  title: string,
+  collections: Collection[]
+};
+
+type AppProps = {
+  front: Front
+};
+
+const App = ({ front }: AppProps) => (
   <div>
     <DragZone type="json" json data={{ type: 'articleFragment', id: 1 }}>
       Article 1 (is a dupe)
@@ -46,7 +82,6 @@ const App = ({ front }) => (
                         arr={articleFragments}
                         type="articleFragment"
                         renderDrop={renderDrop}
-                        maxChildren={2}
                       >
                         {(
                           { title, meta: { supporting } },
