@@ -3,10 +3,12 @@
   "version": "3.0.1",
   "main": "dist/index.js",
   "dependencies": {
+    "@babel/preset-flow": "^7.0.0",
     "lodash.throttle": "^4.1.1",
     "prop-types": "^15.6.2",
     "react": "^16.3.0",
     "react-dom": "^16.3.0",
+    "rollup-plugin-flow-defs": "^1.0.2",
     "uuid": "^3.3.2"
   },
   "repository": {
@@ -18,6 +20,7 @@
   "scripts": {
     "build": "rollup -c",
     "build-examples": "rollup -c examples/rollup.config.js",
+    "update-types": "flow-typed install --overwrite --ignoreDeps peer bundle dev",
     "prepublishOnly": "jest && yarn build",
     "test": "jest",
     "examples": "yarn build-examples && http-server ./examples"
@@ -30,6 +33,8 @@
     "@babel/preset-react": "^7.0.0-beta.49",
     "babel-core": "^7.0.0-0",
     "babel-jest": "^23.0.1",
+    "flow-bin": "^0.80.0",
+    "flow-typed": "^2.5.1",
     "http-server": "^0.11.1",
     "jest": "^23.1.0",
     "mkdirp": "^0.5.1",

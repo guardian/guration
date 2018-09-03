@@ -1,12 +1,21 @@
-import { isSubPath, pathForMove, hasMoved } from './path';
-import { move, insert } from '../edits';
+// @flow
 
-const getEdit = (inputData, inputPath, getDuplicate) =>
+import { isSubPath, pathForMove, hasMoved } from './path';
+import type { Path } from './path';
+import { move, insert } from '../edits';
+import type { Edit } from '../edits';
+import type { Drag } from '../types';
+
+const getEdit = (
+  inputData: Drag,
+  inputPath: Path[],
+  getDuplicate: (id: string) => ?Object
+): ?Edit =>
   inputData.dropType === 'INTERNAL'
     ? handleMove(inputData.path, inputPath)
     : handleInsert(inputData, inputPath, getDuplicate);
 
-const handleMove = (prevPath, nextPath) => {
+const handleMove = (prevPath, nextPath): ?Edit => {
   const { type: dragType, id } = prevPath[prevPath.length - 1];
   const { type } = nextPath[nextPath.length - 1];
 
@@ -26,7 +35,7 @@ const handleMove = (prevPath, nextPath) => {
     : null;
 };
 
-const handleInsert = ({ type: dragType, id }, path, getDuplicate) => {
+const handleInsert = ({ type: dragType, id }, path, getDuplicate): ?Edit => {
   const { type, index } = path[path.length - 1];
 
   if (dragType !== type) {

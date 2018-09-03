@@ -1,4 +1,14 @@
-const move = (type, id, dragPath, path, newIndex) => ({
+// @flow
+
+import type { Path } from '../utils/path';
+
+const move = (
+  type: string,
+  id: string,
+  dragPath: Path[],
+  path: Path[],
+  newIndex: number
+) => ({
   type: 'MOVE',
   payload: {
     type,
@@ -13,7 +23,14 @@ const move = (type, id, dragPath, path, newIndex) => ({
   }
 });
 
-const insert = (type, id, dragPath, newIndex) => ({
+type Move = $Call<typeof move, string, string, Path[], Path[], number>;
+
+const insert = (
+  type: string,
+  id: string,
+  dragPath: Path[],
+  newIndex: number
+) => ({
   type: 'INSERT',
   payload: {
     type,
@@ -24,4 +41,11 @@ const insert = (type, id, dragPath, newIndex) => ({
     }
   }
 });
+
+type Insert = $Call<typeof insert, string, string, Path[], number>;
+
+type Edit = Move | Insert;
+
+export type { Edit, Move, Insert };
+
 export { move, insert };

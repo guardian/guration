@@ -1,0 +1,9 @@
+[libs]
+/flow-typed
+
+[strict]
+nonstrict-import
+untyped-import
+untyped-type-import
+unsafe-getters-setters
+sketchy-null

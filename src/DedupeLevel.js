@@ -1,30 +1,43 @@
+// @flow
+
 import React from 'react';
+import type { Node as ReactNode } from 'react';
 import PropTypes from 'prop-types';
 import { DedupeContext } from './Context';
+import type { DedupeContextType } from './Context';
+import type { Path } from './utils/Path';
 
-class DedupeLevel extends React.Component {
-  
-  static propTypes = {
-    type: PropTypes.string,
-    parentContext: PropTypes.object.isRequired,
-    children: PropTypes.node
-  };
+type ExternalDedupeLevelProps = {|
+  type?: string,
+  children: ReactNode
+|};
 
-  dedupeContext = {};
+type DedupeLevelProps = {|
+  ...ExternalDedupeLevelProps,
+  parentContext: DedupeContextType
+|};
 
-  register = (key, data) => {
+type DedupeInfo = { index: number, path: Path[] };
+
+class DedupeLevel extends React.Component<DedupeLevelProps> {
+  dedupeContext: { [string]: DedupeInfo } = {};
+
+  register = (key: string, index: number, path: Path[]) => {
     this.dedupeContext = {
       ...this.dedupeContext,
-      [key]: data
+      [key]: {
+        index,
+        path
+      }
     };
   };
 
-  deregister = key => {
+  deregister = (key: string) => {
     const { [key]: omit, ...rest } = this.dedupeContext;
     this.dedupeContext = rest;
   };
 
-  getDuplicate = key => this.dedupeContext[key] || null;
+  getDuplicate = (key: string) => this.dedupeContext[key] || null;
 
   render() {
     const context = this.props.type
@@ -45,7 +58,7 @@ class DedupeLevel extends React.Component {
   }
 }
 
-export default props => (
+export default (props: ExternalDedupeLevelProps) => (
   <DedupeContext.Consumer>
     {parentContext => <DedupeLevel {...props} parentContext={parentContext} />}
   </DedupeContext.Consumer>

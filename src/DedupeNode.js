@@ -1,20 +1,26 @@
+// @flow
+
 import React from 'react';
-import PropTypes from 'prop-types';
+import type { Node as ReactNode } from 'react';
 import { DedupeContext } from './Context';
+import GetDuplicate from './GetDuplicate';
+import type { DedupeContextType, DuplicateGetter } from './Context';
+import type { Path } from './utils/path';
 
-class DedupeNode extends React.Component {
-  static propTypes = {
-    context: PropTypes.object.isRequired,
-    type: PropTypes.string.isRequired,
-    // don't pass this if you only need the getDuplicate function
-    // otherwise it's required
-    //
-    // we actually warn about this more nicely in a parent so remove warning
-    // from here
-    // dedupeKey: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    children: PropTypes.func.isRequired
-  };
+type ExternalDedupeNodeProps = {|
+  index: number,
+  path: Path[],
+  dedupeKey?: string,
+  type: string,
+  children: *
+|};
 
+type DedupeNodeProps = {|
+  ...ExternalDedupeNodeProps,
+  context: DedupeContextType
+|};
+
+class DedupeNode extends React.Component<DedupeNodeProps> {
   get dedupeContext() {
     return this.props.context[this.props.type];
   }
@@ -23,7 +29,7 @@ class DedupeNode extends React.Component {
 
   reregister = () => {
     const { dedupeContext } = this;
-    const { data, dedupeKey } = this.props;
+    const { index, path, dedupeKey } = this.props;
 
     if (!dedupeKey) {
       return;
@@ -36,7 +42,7 @@ class DedupeNode extends React.Component {
     }
 
     const { register, deregister } = dedupeContext;
-    register(dedupeKey, data);
+    register(dedupeKey, index, path);
     this.deregister = () => deregister(dedupeKey);
   };
 
@@ -44,23 +50,16 @@ class DedupeNode extends React.Component {
   componentDidUpdate = () => this.reregister();
   componentWillUnmount = () => this.deregister();
 
-  get getDuplicate() {
-    const { dedupeContext } = this;
-
-    if (!dedupeContext) {
-      return () => null;
-    }
-
-    return dedupeContext.getDuplicate;
-  }
-
   render() {
-    return this.props.children(this.getDuplicate);
+    const { type, children } = this.props;
+    return <GetDuplicate type={type}>{children}</GetDuplicate>;
   }
 }
 
-export default props => (
+export default (props: ExternalDedupeNodeProps) => (
   <DedupeContext.Consumer>
-    {context => <DedupeNode {...props} context={context} />}
+    {(context: DedupeContextType) => (
+      <DedupeNode {...props} context={context} />
+    )}
   </DedupeContext.Consumer>
 );

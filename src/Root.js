@@ -1,4 +1,7 @@
+// @flow
+
 import React from 'react';
+import type { Node as ReactNode } from 'react';
 import PropTypes from 'prop-types';
 import v4 from 'uuid/v4';
 import throttle from 'lodash.throttle';
@@ -6,15 +9,37 @@ import Level from './Level';
 import { RootContext } from './Context';
 import { addOffset, eq } from './utils/path';
 import { getEdit } from './utils/edit';
+import type { Edit } from './edits';
+import type { Path } from './utils/path';
+import type {
+  InternalDrag,
+  ExternalDrag,
+  EventType,
+  DuplicateGetter,
+  IndexOffsetGetter
+} from './types';
 
-const extractIndexOffset = (e, getIndexOffset) =>
+type InMap = {
+  [string]: (value: string) => { id: string, type: string } | string
+};
+
+type SanitizedInMap = {
+  [string]: (value: string) => ExternalDrag | string
+};
+
+type OutMap<T: Object> = {
+  [string]: (el: T, type: string, id: string, path: Path[]) => string
+};
+
+const extractIndexOffset = (e: EventType, getIndexOffset: IndexOffsetGetter) =>
   typeof getIndexOffset === 'function' ? getIndexOffset(e) : getIndexOffset;
 
-const sanitizeExternalDrops = mappers =>
-  Object.entries(mappers).reduce(
-    (acc, [key, mapper]) => ({
+const sanitizeExternalDrops = (mappers: InMap) =>
+  Object.keys(mappers).reduce(
+    (acc, key) => ({
       ...acc,
-      [key]: text => {
+      [key]: (text: string) => {
+        const mapper = mappers[key];
         const data = mapper(text);
 
         if (typeof data === 'string') {
@@ -30,19 +55,37 @@ const sanitizeExternalDrops = mappers =>
     {}
   );
 
-const internalMapIn = data => ({
+const internalMapIn = (data: string) => ({
   ...JSON.parse(data),
   dropType: 'INTERNAL'
 });
 
-const internalMapOut = (item, type, id, path) =>
+const internalMapOut = <T>(item: T, type: string, id: string, path: Path[]) =>
   JSON.stringify({
     id,
     type,
     path
   });
 
-class Root extends React.Component {
+type RootProps<T: Object> = {
+  id: string,
+  type: string,
+  field: string,
+  onChange: (edit: Edit) => void,
+  onError: (error: string) => void,
+  mapIn: InMap,
+  mapOut: OutMap<T>,
+  children: ReactNode
+};
+type RootState = {
+  dragData: ?InternalDrag,
+  dropInfo: {
+    path: ?(Path[]),
+    canDrop: ?boolean
+  }
+};
+
+class Root<T: Object> extends React.Component<RootProps<T>, RootState> {
   state = {
     dragData: null,
     dropInfo: {
@@ -51,17 +94,7 @@ class Root extends React.Component {
     }
   };
   eventHandled = false;
-  rootKey = v4();
-
-  static propTypes = {
-    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-    type: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-    field: PropTypes.string,
-    onChange: PropTypes.func,
-    onError: PropTypes.func,
-    mapIn: PropTypes.object,
-    mapOut: PropTypes.object
-  };
+  rootKey: string = v4();
 
   static defaultProps = {
     mapIn: {},
@@ -74,7 +107,7 @@ class Root extends React.Component {
    * This wraps set state to make sure we don't call it too much and keep
    * rerendering, only changing the drop state if things have actually changed
    */
-  setDropInfo(path, canDrop) {
+  setDropInfo(path: ?(Path[]), canDrop: ?boolean) {
     const { path: prevPath } = this.state.dropInfo;
     if (
       (!path && prevPath) ||
@@ -96,7 +129,7 @@ class Root extends React.Component {
    *
    * When the event bubbles outside of the root we reset the `eventHandled` flag
    */
-  runLowest(fn) {
+  runLowest(fn: () => void) {
     if (!this.eventHandled) {
       this.eventHandled = true;
       fn();
@@ -127,7 +160,12 @@ class Root extends React.Component {
    * being dragged from and what type they are to allows us to show invalid
    * drops in the UI while dragging
    */
-  handleNodeDragStart = (item, path, id, type) => e =>
+  handleNodeDragStart = (
+    item: T,
+    path: Path[],
+    id: string,
+    type: string
+  ) => (e: EventType) =>
     this.runLowest(() => {
       Object.keys(this.mapOut).forEach(key => {
         const mapper = this.mapOut[key];
@@ -158,14 +196,23 @@ class Root extends React.Component {
    * Ultimately this is responsible for updating the state to show whether we
    * can drop here
    */
-  handleDropZoneDragOver = (candidatePath, getDuplicate, getIndexOffset) => e =>
+  handleDropZoneDragOver = (
+    candidatePath: Path[],
+    getDuplicate: DuplicateGetter,
+    getIndexOffset: IndexOffsetGetter
+  ) => (e: EventType) =>
     this.runLowest(() => {
       e.preventDefault();
       this.runDropZoneDragOver(candidatePath, getDuplicate, getIndexOffset, e);
     });
 
   runDropZoneDragOver = throttle(
-    (candidatePath, getDuplicate, getIndexOffset, e) => {
+    (
+      candidatePath: Path[],
+      getDuplicate: DuplicateGetter,
+      getIndexOffset: IndexOffsetGetter,
+      e: EventType
+    ) => {
       const { path, canDrop } = this.run(
         e,
         candidatePath,
@@ -186,7 +233,11 @@ class Root extends React.Component {
    * This is similar to handleDropZoneDragOver but it's guaranteed to run the
    * handlers
    */
-  handleDropZoneDrop = (candidatePath, getDuplicate, getIndexOffset) => e =>
+  handleDropZoneDrop = (
+    candidatePath: Path[],
+    getDuplicate: DuplicateGetter,
+    getIndexOffset: IndexOffsetGetter
+  ) => (e: EventType) =>
     this.runLowest(() => {
       e.preventDefault();
       this.run(e, candidatePath, getDuplicate, getIndexOffset);
@@ -202,7 +253,13 @@ class Root extends React.Component {
    * drag and because we can't inspect `dataTransfer` on dragover we'll just
    * have to permit any drop
    */
-  run = (e, candidatePath, getDuplicate, getIndexOffset, dragData) => {
+  run = (
+    e: EventType,
+    candidatePath: Path[],
+    getDuplicate: DuplicateGetter,
+    getIndexOffset: IndexOffsetGetter,
+    dragData: ?($ElementType<RootState, 'dragData'> | true)
+  ) => {
     const path = addOffset(
       candidatePath,
       extractIndexOffset(e, getIndexOffset)
@@ -236,7 +293,7 @@ class Root extends React.Component {
    * All of the functions that map a drop to a node, the key being the
    * key on the `dataTransfer` object that this mapper can handle
    */
-  get mapIn() {
+  get mapIn(): SanitizedInMap {
     return {
       ...sanitizeExternalDrops(this.props.mapIn),
       [this.rootKey]: internalMapIn
@@ -247,7 +304,7 @@ class Root extends React.Component {
    * All of the functions that map a node to a drag, the key being the
    * key on the `dataTransfer` object that this mapper will create
    */
-  get mapOut() {
+  get mapOut(): OutMap<T> {
     return {
       ...this.props.mapOut,
       [this.rootKey]: internalMapOut
@@ -259,7 +316,7 @@ class Root extends React.Component {
   /**
    * Runs through the inMappers to get the data
    */
-  getDropData(e) {
+  getDropData(e: EventType) {
     const { mapIn } = this;
     const type = Object.keys(mapIn).find(key => e.dataTransfer.getData(key));
 

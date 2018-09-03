@@ -1,19 +1,31 @@
+// @flow
+
 import React from 'react';
-import PropTypes from 'prop-types';
+import type { Node as ReactNode } from 'react';
 import Node from './Node';
 import DedupeLevel from './DedupeLevel';
-import DedupeNode from './DedupeNode';
+import GetDuplicate from './GetDuplicate';
 import { RootContext } from './Context';
-import { AddPathLevel, eq } from './utils/path';
+import { eq } from './utils/path';
+import type { Path } from './utils/path';
+import type { Edit } from './edits';
+import type { EventType } from './types';
+import AddPathLevel from './utils/AddPathLevel';
 
 const isUndefined = x => typeof x === 'undefined';
 
+type DropRenderer = (
+  getDropProps: () => DropProps,
+  dropContext: DropContext,
+  index: number
+) => ReactNode;
+
 const doRenderDrop = (
-  renderDrop,
+  renderDrop: ?DropRenderer,
   onDrop,
   onDragOver,
-  canDrop,
-  dropPath,
+  canDrop: ?boolean,
+  dropPath: ?Path[],
   path,
   i
 ) => {
@@ -21,7 +33,7 @@ const doRenderDrop = (
     return null;
   }
 
-  const isTarget = dropPath && eq(path, dropPath);
+  const isTarget = !!dropPath && eq(path, dropPath);
 
   return renderDrop(
     () => ({
@@ -36,22 +48,32 @@ const doRenderDrop = (
   );
 };
 
-class Level extends React.Component {
-  static propTypes = {
-    arr: PropTypes.arrayOf(PropTypes.object),
-    type: PropTypes.string,
-    children: PropTypes.func.isRequired,
-    renderDrop: PropTypes.func,
-    getKey: PropTypes.func,
-    getDedupeKey: PropTypes.func,
-    dropOnNode: PropTypes.bool,
-    dedupeType: PropTypes.string,
-    field: PropTypes.string
-  };
+type DropProps = {
+  onDrop: (e: EventType) => void,
+  onDragOver: (e: EventType) => void
+};
 
+type DropContext = {
+  isTarget: boolean,
+  canDrop: ?boolean
+};
+
+type LevelProps<T> = {|
+  arr: T[],
+  type: string,
+  children: *,
+  renderDrop?: DropRenderer,
+  getKey: (node: T) => string,
+  getDedupeKey?: (node: T) => string,
+  dropOnNode: boolean,
+  dedupeType?: string,
+  field?: string
+|};
+
+class Level<T> extends React.Component<LevelProps<T>> {
   static defaultProps = {
     dropOnNode: true, // sets node drag props to allow drops
-    getKey: ({ id }) => id
+    getKey: <T: { id: string }>({ id }: T) => id
   };
 
   get childrenField() {
@@ -75,7 +97,7 @@ class Level extends React.Component {
 
     return (
       <DedupeLevel type={dedupeType}>
-        <DedupeNode type={type}>
+        <GetDuplicate type={type}>
           {getDuplicate => (
             <RootContext.Consumer>
               {({
@@ -162,7 +184,7 @@ class Level extends React.Component {
               )}
             </RootContext.Consumer>
           )}
-        </DedupeNode>
+        </GetDuplicate>
       </DedupeLevel>
     );
   }

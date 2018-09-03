@@ -1,6 +1,7 @@
 import babel from 'rollup-plugin-babel';
 import resolve from 'rollup-plugin-node-resolve';
 import commonjs from 'rollup-plugin-commonjs';
+import flowDefs from 'rollup-plugin-flow-defs';
 
 export default [
   {
@@ -24,7 +25,8 @@ export default [
             'forwardRef'
           ]
         }
-      })
+      }),
+      flowDefs()
     ],
     external: ['react', 'lodash/fp/get', 'lodash/fp/set']
   }
