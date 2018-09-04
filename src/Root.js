@@ -274,15 +274,17 @@ class Root<T: Object> extends React.Component<RootProps<T>, RootState> {
       return { path, canDrop: false };
     }
 
+    let edit;
+
     try {
-      const edit = getEdit(data, path, getDuplicate);
+      edit = getEdit(data, path, getDuplicate);
+    } catch (e) {
+      !dragData && this.props.onError(e.message);
+    } finally {
       if (edit) {
         !dragData && this.props.onChange(edit);
         return { path, canDrop: true };
       }
-      return { path, canDrop: false };
-    } catch (e) {
-      !dragData && this.props.onError(e.message);
       return { path, canDrop: false };
     }
   };
