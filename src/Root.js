@@ -71,6 +71,7 @@ type RootProps<T: Object> = {
   id: string,
   type: string,
   field?: string,
+  dedupeType?: string,
   onChange: (edit: Edit) => void,
   onError: (error: string) => void,
   mapIn: InMap,
@@ -160,12 +161,9 @@ class Root<T: Object> extends React.Component<RootProps<T>, RootState> {
    * being dragged from and what type they are to allows us to show invalid
    * drops in the UI while dragging
    */
-  handleNodeDragStart = (
-    item: T,
-    path: Path[],
-    id: string,
-    type: string
-  ) => (e: EventType) =>
+  handleNodeDragStart = (item: T, path: Path[], id: string, type: string) => (
+    e: EventType
+  ) =>
     this.runLowest(() => {
       Object.keys(this.mapOut).forEach(key => {
         const mapper = this.mapOut[key];
@@ -330,7 +328,7 @@ class Root<T: Object> extends React.Component<RootProps<T>, RootState> {
   }
 
   render() {
-    const { type, field, id } = this.props;
+    const { type, field, dedupeType, id } = this.props;
     return (
       <div
         onDragOver={this.handleRootDragOver}
@@ -345,7 +343,12 @@ class Root<T: Object> extends React.Component<RootProps<T>, RootState> {
             dropInfo: this.state.dropInfo
           }}
         >
-          <Level type={type} field={field} arr={[{ id }]}>
+          <Level
+            type={type}
+            field={field}
+            dedupeType={dedupeType}
+            arr={[{ id }]}
+          >
             {/**
              * Level requires a function child by here we're doing nothing
              * with the params
