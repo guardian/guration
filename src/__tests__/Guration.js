@@ -119,7 +119,51 @@ describe('Guration', () => {
           },
           index: 1
         }
+      },
+      meta: {}
+    });
+  });
+
+  it('creates INSERT events from mapped drops', () => {
+    let dropProps;
+    let edit;
+
+    const inst = TestRenderer.create(
+      <Root
+        type="@@ROOT"
+        id="@@ROOT"
+        onChange={e => (edit = e)}
+        mapIn={{
+          text: str => JSON.parse(str)
+        }}
+      >
+        <Level arr={[{ id: 2 }]} type="a">
+          {() => (
+            <Level
+              arr={[{ id: 1 }]}
+              type="a"
+              field="children"
+              renderDrop={getDropProps => {
+                dropProps = getDropProps();
+              }}
+            >
+              {() => null}
+            </Level>
+          )}
+        </Level>
+      </Root>
+    ).getInstance();
+
+    runDrag('text', {
+      type: 'a',
+      id: 2,
+      meta: {
+        key: 'value'
       }
+    })(dropProps, inst);
+
+    expect(edit.meta).toEqual({
+      key: 'value'
     });
   });
 
@@ -177,7 +221,8 @@ describe('Guration', () => {
         },
         type: 'a'
       },
-      type: 'MOVE'
+      type: 'MOVE',
+      meta: {}
     });
   });
 

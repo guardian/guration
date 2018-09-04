@@ -7,7 +7,8 @@ const move = (
   id: string,
   dragPath: Path[],
   path: Path[],
-  newIndex: number
+  newIndex: number,
+  meta: Object = {}
 ) => ({
   type: 'MOVE',
   payload: {
@@ -20,7 +21,8 @@ const move = (
       parent: path[path.length - 2],
       index: newIndex
     }
-  }
+  },
+  meta
 });
 
 type Move = $Call<typeof move, string, string, Path[], Path[], number>;
@@ -29,7 +31,8 @@ const insert = (
   type: string,
   id: string,
   dragPath: Path[],
-  newIndex: number
+  newIndex: number,
+  meta: Object = {}
 ) => ({
   type: 'INSERT',
   payload: {
@@ -39,7 +42,8 @@ const insert = (
       parent: dragPath[dragPath.length - 2],
       index: newIndex
     }
-  }
+  },
+  meta
 });
 
 type Insert = $Call<typeof insert, string, string, Path[], number>;
