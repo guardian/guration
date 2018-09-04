@@ -35,7 +35,8 @@ type Move = {
       },
       index: newIndex
     }
-  }
+  },
+  meta: Object
 };
 ```
 
@@ -58,7 +59,8 @@ type Insert = {
         id: string
       }
     }
-  }
+  },
+  meta: Object
 };
 ```
 
@@ -70,7 +72,7 @@ This is the wrapper around a `Guration` context and [`Levels`](#Level) cannot be
 
 #### Props
 
-##### `id: number | string`
+##### `id: string`
 
 This is the root id that will be used as the parent of the whole tree and will appear in edits that drop into drop zones for the root level of the tree.
 
@@ -90,9 +92,9 @@ This expects a callback function that will receive an of (`edit`)[#Edits] each t
 
 A callback that will recieve strings describing errors regarding invalid drops. For example, dropping an node of one type into a level of another type or dropping an node into a child of itself.
 
-##### `mapIn?: { [string]: string => { id: string, type: string } }`
+##### `mapIn?: { [string]: string => { id: string, type: string, meta?: Object } }`
 
-An object whose keys represent a `type` on `e.dataTransfer.types` that can be handle by the callback that is in the value position of the object. The callback will receive any data that is found when `e.dataTranfer.getData(type)` is called and is expected to return an object of `{ id: string, type: string }` that can be used to validate and then generate an edit in a drop zone.
+An object whose keys represent a `type` on `e.dataTransfer.types` that can be handle by the callback that is in the value position of the object. The callback will receive any data that is found when `e.dataTranfer.getData(type)` is called and is expected to return an object of `{ id: string, type: string }` that can be used to validate and then generate an edit in a drop zone. This object can also have an optional `meta` key to pass through to the any subsequent if required.
 
 ##### `mapOut?: { [string]: (el: Object, type: string, id: string, path: Path[]) => string }`
 
@@ -124,7 +126,7 @@ Again much like `Root` this specifies the `childrenField` field of an edit that 
 
 This is a function that will be used to render the drops between the draggable nodes rendered by `children`. `isOver` is much like `:hover` pseduo-selector except that when `dropOnNode` is true `isTarget` will also be true when that position is the target position for a drop while hovering a node.
 
-##### `getKey: ?(el: T) => number | string`
+##### `getKey: ?(el: T) => string`
 
 A function that returns the key from each object in the array, defaults to `({ id }) => id`
 
@@ -132,7 +134,7 @@ A function that returns the key from each object in the array, defaults to `({ i
 
 Specifying this on a `Level` will ensure that anything below this level that is of the same `type` and has the same `dedupeKey` will act as a move rather than an insert.
 
-##### `getDedupeKey: ?(el: T) => number | string`
+##### `getDedupeKey: ?(el: T) => string`
 
 The function that returns the key for comapring items for deduping, defaults to `getKey`.
 

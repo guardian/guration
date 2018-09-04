@@ -15,7 +15,7 @@ const getEdit = (
     ? handleMove(inputData.path, inputPath)
     : handleInsert(inputData, inputPath, getDuplicate);
 
-const handleMove = (prevPath, nextPath): ?Edit => {
+const handleMove = (prevPath, nextPath, meta = {}): ?Edit => {
   const { type: dragType, id } = prevPath[prevPath.length - 1];
   const { type } = nextPath[nextPath.length - 1];
 
@@ -31,11 +31,11 @@ const handleMove = (prevPath, nextPath): ?Edit => {
   const { index } = movePath[movePath.length - 1];
 
   return hasMoved(prevPath, nextPath)
-    ? move(type, id, prevPath, movePath, index)
+    ? move(type, id, prevPath, movePath, index, meta)
     : null;
 };
 
-const handleInsert = ({ type: dragType, id }, path, getDuplicate): ?Edit => {
+const handleInsert = ({ type: dragType, id, meta }, path, getDuplicate): ?Edit => {
   const { type, index } = path[path.length - 1];
 
   if (dragType !== type) {
@@ -45,8 +45,8 @@ const handleInsert = ({ type: dragType, id }, path, getDuplicate): ?Edit => {
   const duplicate = getDuplicate(id);
 
   return duplicate
-    ? handleMove(duplicate.path, path)
-    : insert(type, id, path, index);
+    ? handleMove(duplicate.path, path, meta)
+    : insert(type, id, path, index, meta);
 };
 
 export { getEdit };
